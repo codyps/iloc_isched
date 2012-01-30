@@ -4,13 +4,12 @@
 %}
 
 %union {
-	expr_list_t *expr_list;
-	expr_t      *expr;
-	op_t        *operation;
-	arg_list_t  *arg_list;
-	arg_t       *arg;
-	comment_t   *comment;
-	char        *label;
+	stmts_t *stmts;
+	stmt_t  *stmt;
+	op_t    *operation;
+	args_t  *args;
+	arg_t   *arg;
+	char    *label;
 }
 
 %left  COLON
@@ -19,30 +18,29 @@
 %token COMMENT
 %token EXPR_END
 
-%type <expr_list> expr_list
-%type <expr>      expr
+%type <stmts>     stmts
+%type <stmt>      stmt
 %type <operation> operation
-%type <arg_list>  arg_list
+%type <args>      args
 %type <arg>       arg
-%type <comment>   comment
 %type <label>     label
 
 %start program
 
 %%
 
-expr_list : expr
-	  | expr expr
+statments : /* empty */
+	  | statements statment
 
-expr : label operation
-     | operation
+statment : label operation
+         | operation
 
 label : IDENT COLON
 
-operation : IDENT arg_list EXPR_END
+operation : IDENT args EXPR_END
 
-arg_list : arg
-         | arg arg
+args : /* empty */
+     | args arg
 
 arg : IDENT
     | ARROW
