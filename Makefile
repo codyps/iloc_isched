@@ -24,7 +24,7 @@ lasm.tab.c lasm.tab.h :
 	$(YACC) -dtv $< -b $(<:.y=)
 
 clean:
-	$(RM) *.o *.tab.[ch] lasm
+	$(RM) *.o *.tab.[ochd] *.yy.[ochd] lasm
 
 %:
 	$(CCLD) $(CFLAGS) $(LDFLAGS) -o $@ $<
