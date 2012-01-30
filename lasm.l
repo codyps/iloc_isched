@@ -10,6 +10,7 @@
 %}
 %{
 #include <stdio.h>
+#include "lasm.h"
 #include "lasm.tab.h"
 %}
 
@@ -43,23 +44,17 @@ ID       [^-/ \t\n\v,:=>]
 
 \/\*.*\*\/ printf("Big comment\n");
 
+\n         return STMT_END;
 
-\n         printf("NL\n");
-
-:          printf("Label marker\n");
-{ID_FST}{ID}*  printf("Identifier %s\n", yytext);
-{NUM}+     printf("Num: %s\n", yytext);
-=>         printf("Arrow\n");
-,          printf("Comma\n");
+:          return COLON;
+{ID_FST}{ID}*  return IDENT;
+{NUM}+     return NUM;
+=>         return ARROW;
+,          return COMMA;
 .	   printf("*** Unk %s\n", yytext);
 
 %%
 
-int main(int argc, char *argv[])
-{
-	yylex();
-	return 0;
-}
 
 int yywrap(void)
 {
