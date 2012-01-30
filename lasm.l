@@ -10,29 +10,48 @@
 %}
 %{
 #include <stdio.h>
+#include "lasm.tab.h"
 %}
 
-WT       [ \t\n\v]
+
+%x IN_COMMENT
+
+WT       [ \t\v]
 SYM      [,:=>]
 NUM      [-0-9]
 ID_FST   [^-/ \t\n\v,:=>0-9]
 ID       [^-/ \t\n\v,:=>]
 
-
 %%
 
-{WT}+   printf("W\n");
---[^\n]*   printf("Haskel Comment\n");
-\/\/[^\n]* printf("C Comment\n");
+{WT}+      /* ignore whitespace */;
+--[^\n]*   /* ignore comments */;
+\/\/[^\n]* /* ignore comments */;
+
+"/*"	{
+	printf("Start comment\n");
+	BEGIN(IN_COMMENT);
+}
+
+<IN_COMMENT>{
+"*/"    {
+	printf("End comment\n");
+	BEGIN(0);
+	}
+.*	{ printf("Comment Line\n"); }
+}
+
 \/\*.*\*\/ printf("Big comment\n");
+
+
+\n         printf("NL\n");
 
 :          printf("Label marker\n");
 {ID_FST}{ID}*  printf("Identifier %s\n", yytext);
 {NUM}+     printf("Num: %s\n", yytext);
 =>         printf("Arrow\n");
-
-
-.	   printf("Unk %s\n", yytext);
+,          printf("Comma\n");
+.	   printf("*** Unk %s\n", yytext);
 
 %%
 

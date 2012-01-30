@@ -7,8 +7,12 @@ LEX    = lex
 YACC   = yacc
 RM     = rm -rf
 
-
 lasm: lasm.yy.o
+lasm.yy.o : lasm.tab.h lasm.tab.c
+
+lasm.tab.c lasm.tab.h :
+	touch lasm.tab.h
+	touch lasm.tab.c
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -20,7 +24,7 @@ lasm: lasm.yy.o
 	$(YACC) -dtv $< -b $(<:.y=)
 
 clean:
-	$(RM)
+	$(RM) *.o *.tab.[ch] lasm
 
 %:
 	$(CCLD) $(CFLAGS) $(LDFLAGS) -o $@ $<
