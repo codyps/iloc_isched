@@ -38,8 +38,9 @@ statements : /* empty */
 	   {
 		$2->l.prev = &$1->l;
 		$$ = $2;
-		if (!first_stmt)
-			first_stmt = $$;
+		stmt_t **fst = first_stmt;
+		if (!*fst)
+			*fst = $$;
            }
 
 statement : attr_list IDENT args STMT_END
