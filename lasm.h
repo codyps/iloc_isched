@@ -29,5 +29,6 @@ attr_t *attr_label_mk(char *label);
 
 void yyerror(const char *);
 int yylex(void);
+int yyparse(void *);
 
 #endif

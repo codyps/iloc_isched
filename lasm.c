@@ -37,6 +37,7 @@ void yyerror(const char *str)
 
 int main(int argc, char *argv[])
 {
-	yylex();
+	stmt_t *stmt = NULL;
+	yyparse(stmt);
 	return 0;
 }

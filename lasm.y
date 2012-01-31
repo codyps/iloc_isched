@@ -38,6 +38,8 @@ statements : /* empty */
 	   {
 		$2->l.prev = &$1->l;
 		$$ = $2;
+		if (!first_stmt)
+			first_stmt = $$;
            }
 
 statement : attr_list IDENT args STMT_END

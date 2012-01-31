@@ -22,6 +22,7 @@ lasm.yy.o : lasm.tab.h lasm.tab.c
 
 # For fileno used by lex
 lasm.yy.o : CFLAGS+=-D_POSIX_SOURCE
+lasm.tab.o: CFLAGS+=-DYYPARSE_PARAM=first_stmt
 
 %.o : %.c
 	$(QUIET_CC)$(CC) $(CFLAGS) -c -o $@ $<
