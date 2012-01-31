@@ -3,9 +3,6 @@
 %{
 #include <stddef.h>
 #include "lasm.h"
-arg_t  *arg_mk(char *arg);
-stmt_t *stmt_mk(char *opcode, arg_t *args, attr_t *attrs);
-attr_t *attr_label_mk(char *label);
 %}
 
 %union {
