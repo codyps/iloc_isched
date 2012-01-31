@@ -2,6 +2,7 @@
 
 %{
 #include <stddef.h>
+#include <stdio.h> /* for fileno used by yacc */
 #include "lasm.h"
 %}
 
