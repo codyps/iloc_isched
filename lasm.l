@@ -12,6 +12,9 @@
 #include <stdio.h>
 #include "lasm.h"
 #include "lasm.tab.h"
+#define YY_NO_INPUT
+#define YY_NO_YYUNINPUT
+static void yyunput (int c,char *buf_ptr) __attribute__((unused));
 %}
 
 
@@ -54,7 +57,6 @@ ID       [^-/ \t\n\v,:=>]
 .	   printf("*** Unk %s\n", yytext);
 
 %%
-
 
 int yywrap(void)
 {

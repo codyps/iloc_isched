@@ -14,8 +14,14 @@ ifndef V
 	QUIET_YACC = @ echo '    ' YACC $@;
 endif
 
+.SECONDARY:
+
 lasm: lasm.yy.o lasm.tab.o lasm.o
 lasm.yy.o : lasm.tab.h lasm.tab.c
+
+
+# For fileno used by lex
+lasm.yy.o : CFLAGS+=-D_POSIX_SOURCE
 
 %.o : %.c
 	$(QUIET_CC)$(CC) $(CFLAGS) -c -o $@ $<
