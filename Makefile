@@ -1,8 +1,8 @@
 CFLAGS = -g -Wall -MMD
-LDFLAGS=
+LDFLAGS= -ll
 
-CC     = gcc
-CCLD   = gcc
+CC     = c99
+CCLD   = c99
 LEX    = lex
 YACC   = yacc
 RM     = rm -rf
