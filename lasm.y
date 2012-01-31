@@ -50,7 +50,6 @@ statement : attr_list IDENT args STMT_END
 attr_list : /* empty */
 	  { $$ = NULL; }
 	  | attr_list STMT_END /* eat STMT_ENDs in the attr_list */
-	  { $$ = $1; }
 	  | attr_list attr
 	  {
 		$2->l.prev = $1;
@@ -58,7 +57,6 @@ attr_list : /* empty */
 	  }
 
 attr : label
-     { $$ = $1; }
 
 label : IDENT COLON
       { $$ = attr_label_mk($1); }
