@@ -1,3 +1,6 @@
+
+#include <stdlib.h>
+#include <stdio.h>
 #include "lasm.h"
 #include "lasm.tab.h"
 
@@ -25,6 +28,11 @@ attr_t *attr_label_mk(char *label)
 	list_head_init(&x->l);
 	x->lbl = label;
 	return x;
+}
+
+void yyerror(const char *str)
+{
+	printf("error: %s\n", str);
 }
 
 int main(int argc, char *argv[])
