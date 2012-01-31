@@ -38,7 +38,7 @@ statements : /* empty */
 	   { $$ = NULL; }
            | statements statement
 	   {
-		$2->l.prev = $1;
+		$2->l.prev = &$1->l;
 		$$ = $2;
            }
 
@@ -52,7 +52,7 @@ attr_list : /* empty */
 	  | attr_list STMT_END /* eat STMT_ENDs in the attr_list */
 	  | attr_list attr
 	  {
-		$2->l.prev = $1;
+		$2->l.prev = &$1->l;
 		$$ = $2;
 	  }
 
@@ -66,7 +66,7 @@ args : /* empty */
      | args arg
      {
 	$$ = arg_mk($2);
-	$$->l.prev = $1;
+	$$->l.prev = &$1->l;
      }
 
 arg : IDENT

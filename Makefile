@@ -1,5 +1,5 @@
 CFLAGS = -g -Wall -MMD
-LDFLAGS= -ll
+LDFLAGS= -lfl
 
 CC     = c99
 CCLD   = c99
