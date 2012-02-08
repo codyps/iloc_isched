@@ -1,4 +1,6 @@
 /* Hi */
+%pure-parser
+%parse-param { struct list_head *stmt_head }
 
 %{
 #include <stddef.h>
@@ -7,6 +9,8 @@
 %}
 
 %union {
+	struct list_head head;
+	struct list_head *list;
 	stmt_t *stmt;
 	arg_t  *arg;
 	attr_t *attr;
@@ -20,6 +24,7 @@
 %token <str> IDENT
 %token STMT_END
 
+%type <list>      program    /* a list of statements */
 %type <stmt>      statements /* a list of statements */
 %type <stmt>      statement  /* an operation with attrs */
 %type <attr>      attr_list  /* a list of attributes */
@@ -28,19 +33,29 @@
 %type <arg>       args       /* a list of arguments */
 %type <str>       arg
 
-%start statements
+%start program
+
 
 %%
+
+program : statements
+	{
+		struct list_head *h = stmt_head;
+		list_head_init(h);
+		list_attach_head(h, &$1->l);
+		$$ = h;
+	}
 
 statements : /* empty */
 	   { $$ = NULL; }
            | statements statement
 	   {
-		$2->l.prev = &$1->l;
-		$$ = $2;
-		stmt_t **fst = first_stmt;
-		if (!*fst)
-			*fst = $$;
+		if ($1) {
+			list_add_prev(&$1->l, &$2->l);
+			$$ = $1;
+		} else {
+			$$ = $2;
+		}
            }
 
 statement : attr_list IDENT args STMT_END
@@ -53,8 +68,12 @@ attr_list : /* empty */
 	  | attr_list STMT_END /* eat STMT_ENDs in the attr_list */
 	  | attr_list attr
 	  {
-		$2->l.prev = &$1->l;
-		$$ = $2;
+		if ($1) {
+			list_add_prev(&$1->l, &$2->l);
+			$$ = $1;
+		} else {
+			$$ = $2;
+		}
 	  }
 
 attr : label

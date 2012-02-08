@@ -1,8 +1,11 @@
 
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "list.h"
 #include "lasm.h"
 #include "lasm.tab.h"
+
 
 arg_t  *arg_mk(char *arg)
 {
@@ -32,12 +35,23 @@ attr_t *attr_label_mk(char *label)
 
 void yyerror(const char *str)
 {
-	printf("error: %s\n", str);
+	fprintf(stderr, "error: %s\n", str);
+}
+
+void stmt_print(struct list_head *head, FILE *o)
+{
+	stmt_t *e;
+	list_for_each_entry_prev(e, head, l) {
+		fprintf(o, "op: %s", e->opcode);
+	}
 }
 
 int main(int argc, char *argv[])
 {
-	stmt_t *stmt = NULL;
-	yyparse(stmt);
+	struct list_head *lh = NULL;
+	lasmparse(&lh);
+
+	stmt_print(lh, stdout);
+
 	return 0;
 }
