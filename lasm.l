@@ -12,20 +12,31 @@
 #include <stdio.h>
 #include "lasm.h"
 #include "lasm.tab.h"
+//#include "lasm.tab.i"
 #define YY_NO_INPUT
 #define YY_NO_YYUNINPUT
-#define yylex lasmlex
-static void yyunput (int c,char *buf_ptr) __attribute__((unused));
+#define YY_SKIP_YYWRAP
+static int yywrap(void)
+{
+	return 1;
+}
+//#define yylex lasmlex
+//static void yyunput (int c,char *buf_ptr) __attribute__((unused));
 %}
 
 
 %x IN_COMMENT
 
-WT       [ \t\v]
+WT       [ \t]
 SYM      [,:=>]
 NUM      [-0-9]
-ID_FST   [^-/ \t\n\v,:=>0-9]
-ID       [^-/ \t\n\v,:=>]
+%{ // ID_FST   [^-/ \t\n\v,:=>0-9]
+%}
+%{ // ID       [^/ \t\n\v,:=>]
+%}
+
+ID_FST [[:alpha:]]
+ID     [[:alnum:]]
 
 %%
 
@@ -49,17 +60,17 @@ ID       [^-/ \t\n\v,:=>]
 \/\*.*\*\/ printf("Big comment\n");
 
 \n         return STMT_END;
-
 :          return COLON;
-{ID_FST}{ID}*  return IDENT;
+
+{ID_FST}{ID}* {
+	lasm_lval.str = yytext;
+	printf("IDENT: '%s'\n", yytext);
+	return IDENT;
+	}
+
 {NUM}+     return NUM;
 =>         return ARROW;
 ,          return COMMA;
-.	   printf("*** Unk %s\n", yytext);
+.	   printf("*** Unk '%s'\n", yytext);
 
 %%
-
-int yywrap(void)
-{
-	return 1;
-}

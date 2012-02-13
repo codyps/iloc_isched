@@ -3,7 +3,7 @@ LDFLAGS=
 
 CC     = gcc
 CCLD   = gcc
-LEX    = lex
+LEX    = flex
 YACC   = byacc
 RM     = rm -rf
 
@@ -26,11 +26,14 @@ lasm.yy.o : CFLAGS+=-D_POSIX_SOURCE
 %.o : %.c
 	$(QUIET_CC)$(CC) $(CFLAGS) -c -o $@ $<
 
+%.dot.png: %.dot
+	dot -Tpng $< -o $@
+
 %.yy.c : %.l
-	$(QUIET_LEX)$(LEX) -t $< | sed 's/<stdout>/$@/g' > $@
+	$(QUIET_LEX)$(LEX) -P "$(<:.l=)_" -o $@ --header-file=$(@:.c=.h) $<
 
 %.tab.c %.tab.h : %.y
-	$(QUIET_YACC)$(YACC) -dtvgi -b $(<:.y=) -p $(<:.y=) $<
+	$(QUIET_YACC)$(YACC) -dtvgi -b $(<:.y=) -p "$(<:.y=)_" $<
 
 .PHONY: clean
 clean :

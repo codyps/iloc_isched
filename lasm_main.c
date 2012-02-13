@@ -6,30 +6,37 @@
 #include "lasm.h"
 #include "lasm.tab.h"
 
+int lasm_parse(struct list_head *stmt_head);
 
 arg_t  *arg_mk(char *arg)
 {
 	arg_t *x = malloc(sizeof(*x));
-	list_head_init(&x->l);
-	x->arg = arg;
+	if (x) {
+		list_head_init(&x->l);
+		x->arg = arg;
+	}
 	return x;
 }
 
 stmt_t *stmt_mk(char *opcode, arg_t *args, attr_t *attrs)
 {
 	stmt_t *x = malloc(sizeof(*x));
-	list_head_init(&x->l);
-	x->opcode = opcode;
-	x->args   = args;
-	x->attrs  = attrs;
+	if (x) {
+		list_head_init(&x->l);
+		x->opcode = opcode;
+		x->args   = args;
+		x->attrs  = attrs;
+	}
 	return x;
 }
 
 attr_t *attr_label_mk(char *label)
 {
 	attr_t *x = malloc(sizeof(*x));
-	list_head_init(&x->l);
-	x->lbl = label;
+	if (x) {
+		list_head_init(&x->l);
+		x->lbl = label;
+	}
 	return x;
 }
 
@@ -42,16 +49,16 @@ void stmt_print(struct list_head *head, FILE *o)
 {
 	stmt_t *e;
 	list_for_each_entry_prev(e, head, l) {
-		fprintf(o, "op: %s", e->opcode);
+		fprintf(o, "op: %s\n", e->opcode);
 	}
 }
 
 int main(int argc, char *argv[])
 {
-	struct list_head *lh = NULL;
-	lasmparse(&lh);
+	LIST_HEAD(lh);
+	lasm_parse(&lh);
 
-	stmt_print(lh, stdout);
+	stmt_print(&lh, stdout);
 
 	return 0;
 }

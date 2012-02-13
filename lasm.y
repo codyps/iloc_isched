@@ -1,11 +1,13 @@
 /* Hi */
-%pure-parser
+/*%pure-parser*/
 %parse-param { struct list_head *stmt_head }
 
 %{
+#define YYERROR_DECL
 #include <stddef.h>
 #include <stdio.h> /* for fileno used by yacc */
 #include "lasm.h"
+#include "lasm.yy.h"
 %}
 
 %union {
@@ -60,6 +62,7 @@ statements : /* empty */
 
 statement : attr_list IDENT args STMT_END
 	  {
+		printf("statment: '%s'\n", $2);
 		$$ = stmt_mk($2, $3, $1);
 	  }
 
@@ -95,3 +98,10 @@ arg : IDENT
     | COMMA
 
 %%
+
+void lasm_error(struct list_head *stmt_head, char *msg)
+{
+	fprintf(stderr, "parse error: %s", msg);
+	exit(1);
+}
+
