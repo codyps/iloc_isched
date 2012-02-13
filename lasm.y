@@ -17,6 +17,7 @@
 	arg_t  *arg;
 	attr_t *attr;
 	char   *str;
+	int    token;
 }
 
 %left  COLON

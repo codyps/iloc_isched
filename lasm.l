@@ -2,13 +2,7 @@
 %{
 //Definitions
 //name subsitute
-%}
-
-%pointer
-%{
 // or %array, refers to type of 'yytext'
-%}
-%{
 #include <stdio.h>
 #include "lasm.h"
 #include "lasm.tab.h"
@@ -20,10 +14,22 @@ static int yywrap(void)
 {
 	return 1;
 }
+
+static void *memdup(void *s, size_t l)
+{
+	void *r = malloc(l);
+	if (r)
+		memcpy(r, s, l);
+	return r;
+}
+
 //#define yylex lasmlex
 //static void yyunput (int c,char *buf_ptr) __attribute__((unused));
+#define SAVE_TOKEN lasm_lval.str = memdup(yytext, yyleng + 1);
+
 %}
 
+%pointer
 
 %x IN_COMMENT
 
@@ -62,15 +68,11 @@ ID     [[:alnum:]]
 \n         return STMT_END;
 :          return COLON;
 
-{ID_FST}{ID}* {
-	lasm_lval.str = yytext;
-	printf("IDENT: '%s'\n", yytext);
-	return IDENT;
-	}
+{ID_FST}{ID}* { SAVE_TOKEN; return IDENT; }
 
-{NUM}+     return NUM;
-=>         return ARROW;
-,          return COMMA;
+{NUM}+     { SAVE_TOKEN; return NUM;   }
+=>         { SAVE_TOKEN; return ARROW; }
+,          { SAVE_TOKEN; return COMMA; }
 .	   printf("*** Unk '%s'\n", yytext);
 
 %%
