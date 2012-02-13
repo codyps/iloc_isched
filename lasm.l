@@ -24,8 +24,8 @@ static void *memdup(void *s, size_t l)
 }
 
 //#define yylex lasmlex
-//static void yyunput (int c,char *buf_ptr) __attribute__((unused));
-#define SAVE_TOKEN lasm_lval.str = memdup(yytext, yyleng + 1);
+static void yyunput (int c,char *buf_ptr) __attribute__((unused));
+#define SAVE_TOKEN do { lasm_lval.str = memdup(yytext, yyleng + 1); } while(0)
 
 %}
 

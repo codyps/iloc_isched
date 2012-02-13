@@ -30,7 +30,7 @@ lasm.yy.o : CFLAGS+=-D_POSIX_SOURCE
 	dot -Tpng $< -o $@
 
 %.yy.c : %.l
-	$(QUIET_LEX)$(LEX) -P "$(<:.l=)_" -o $@ --header-file=$(@:.c=.h) $<
+	$(QUIET_LEX)$(LEX) --yylineno -P "$(<:.l=)_" -o $@ --header-file=$(@:.c=.h) $<
 
 %.tab.c %.tab.h : %.y
 	$(QUIET_YACC)$(YACC) -dtvgi -b $(<:.y=) -p "$(<:.y=)_" $<
