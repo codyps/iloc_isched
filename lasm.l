@@ -1,15 +1,11 @@
 
 %{
-//Definitions
-//name subsitute
-// or %array, refers to type of 'yytext'
 #include <stdio.h>
 #include "lasm.h"
 #include "lasm.tab.h"
-//#include "lasm.tab.i"
-#define YY_NO_INPUT
-#define YY_NO_YYUNINPUT
-#define YY_SKIP_YYWRAP
+#define YY_NO_INPUT    /* hides warning about "input defined but not used" */
+#define YY_SKIP_YYWRAP /* allows me to make it static */
+
 static int yywrap(void)
 {
 	return 1;
@@ -23,8 +19,9 @@ static void *memdup(void *s, size_t l)
 	return r;
 }
 
-//#define yylex lasmlex
+// hides warning about unused yyunput.
 static void yyunput (int c,char *buf_ptr) __attribute__((unused));
+
 #define SAVE_TOKEN do { lasm_lval.str = memdup(yytext, yyleng + 1); } while(0)
 
 %}
@@ -36,13 +33,8 @@ static void yyunput (int c,char *buf_ptr) __attribute__((unused));
 WT       [ \t]
 SYM      [,:=>]
 NUM      [-0-9]
-%{ // ID_FST   [^-/ \t\n\v,:=>0-9]
-%}
-%{ // ID       [^/ \t\n\v,:=>]
-%}
-
-ID_FST [[:alpha:]]
-ID     [[:alnum:]]
+ID_FST   [[:alpha:]]
+ID       [[:alnum:]]
 
 %%
 

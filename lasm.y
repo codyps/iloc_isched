@@ -89,8 +89,13 @@ args : /* empty */
      { $$ = NULL; }
      | args arg
      {
-	$$ = arg_mk($2);
-	$$->l.prev = &$1->l;
+	arg_t *a = arg_mk($2);
+	if ($1) {
+		list_add_prev(&$1->l, &a->l);
+		$$ = $1;
+	} else {
+		$$ = a;
+	}
      }
 
 arg : IDENT
