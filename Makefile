@@ -4,7 +4,7 @@ LDFLAGS=
 CC     = gcc
 CCLD   = gcc
 LEX    = flex
-YACC   = byacc
+YACC   = bison
 RM     = rm -rf
 
 ifndef V
@@ -17,10 +17,9 @@ endif
 .SECONDARY:
 
 lasm: lasm.yy.o lasm.tab.o lasm_main.o
-lasm.yy.o : lasm.tab.h lasm.tab.c
-
+lasm.yy.o: lasm.tab.h
 # For fileno used by lex
-lasm.yy.o : CFLAGS+=-D_POSIX_SOURCE
+#lasm.yy.o : CFLAGS+=-D_POSIX_SOURCE
 #lasm.tab.o: CFLAGS+=-DYYPARSE_PARAM=stmt_head
 
 %.o : %.c
@@ -33,11 +32,11 @@ lasm.yy.o : CFLAGS+=-D_POSIX_SOURCE
 	$(QUIET_LEX)$(LEX) --yylineno -P "$(<:.l=)_" -o $@ --header-file=$(@:.c=.h) $<
 
 %.tab.c %.tab.h : %.y
-	$(QUIET_YACC)$(YACC) -dtvgi -b $(<:.y=) -p "$(<:.y=)_" $<
+	$(QUIET_YACC)$(YACC) -d -b $(<:.y=) -p "$(<:.y=)_" $<
 
 .PHONY: clean
 clean :
-	$(RM) *.o *.tab.[ochd] *.yy.[ochd] lasm
+	$(RM) *.[od] *.tab.[ch] *.yy.[ch] *.output lasm
 
 % :
 	$(QUIET_LD)$(CCLD) $(CFLAGS) $(LDFLAGS) -o $@ $^

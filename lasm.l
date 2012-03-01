@@ -3,13 +3,15 @@
 #include <stdio.h>
 #include "lasm.h"
 #include "lasm.tab.h"
-#define YY_NO_INPUT    /* hides warning about "input defined but not used" */
-#define YY_SKIP_YYWRAP /* allows me to make it static */
+//#define YY_NO_INPUT    /* hides warning about "input defined but not used" */
+//#define YY_SKIP_YYWRAP /* allows me to make it static */
 
+#if 0
 static int yywrap(void)
 {
 	return 1;
 }
+#endif
 
 static void *memdup(void *s, size_t l)
 {
@@ -20,7 +22,7 @@ static void *memdup(void *s, size_t l)
 }
 
 // hides warning about unused yyunput.
-static void yyunput (int c,char *buf_ptr) __attribute__((unused));
+//static void yyunput (int c,char *buf_ptr) __attribute__((unused));
 
 #define SAVE_TOKEN do { lasm_lval.str = memdup(yytext, yyleng + 1); } while(0)
 
@@ -43,16 +45,16 @@ ID       [[:alnum:]]
 \/\/[^\n]* /* ignore comments */;
 
 "/*"	{
-	printf("Start comment\n");
+	//printf("Start comment\n");
 	BEGIN(IN_COMMENT);
 }
 
 <IN_COMMENT>{
 "*/"    {
-	printf("End comment\n");
+	//printf("End comment\n");
 	BEGIN(0);
 	}
-.*	{ printf("Comment Line\n"); }
+.*	{ // printf("Comment Line\n"); }
 }
 
 \/\*.*\*\/ printf("Big comment\n");
