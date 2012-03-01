@@ -1,15 +1,10 @@
-/* Hi */
-/*%pure-parser*/
-%parse-param { struct list_head *stmt_head }
-
 %{
-#define YYERROR_DECL
+#include <stdio.h>
 #include <stddef.h>
-#include <stdio.h> /* for fileno used by yacc */
 #include "lasm.h"
-#include "lasm.yy.h"
+#include "lasm_param.h"
 %}
-
+%define api.pure
 %union {
 	struct list_head head;
 	struct list_head *list;
@@ -19,6 +14,14 @@
 	char   *str;
 	int    token;
 }
+%{
+#include "lasm.yy.h"
+void lasm_error(char *msg)
+{
+	fprintf(stderr, "parse error: %s", msg);
+	exit(1);
+}
+%}
 
 %left  COLON
 %token <str> COMMA
@@ -38,12 +41,11 @@
 
 %start program
 
-
 %%
 
 program : statements
 	{
-		struct list_head *h = stmt_head;
+		struct list_head *h = &((lasm_parse_t *)data)->stmt_list ;
 		list_head_init(h);
 		list_attach_head(h, &$1->l);
 		$$ = h;
@@ -105,9 +107,4 @@ arg : IDENT
 
 %%
 
-void lasm_error(struct list_head *stmt_head, char *msg)
-{
-	fprintf(stderr, "parse error: %s", msg);
-	exit(1);
-}
 
