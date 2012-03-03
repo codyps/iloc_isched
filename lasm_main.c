@@ -5,12 +5,8 @@
 #include "list.h"
 #include "lasm.h"
 #include "lasm.tab.h"
-
-int lasm_parse(struct list_head *stmt_head);
-
-
-
-
+#include "lasm.yy.h"
+#include "lasm_param.h"
 
 
 arg_t  *arg_mk(char *arg)
@@ -45,10 +41,6 @@ attr_t *attr_label_mk(char *label)
 	return x;
 }
 
-void yyerror(const char *str)
-{
-	fprintf(stderr, "error: %s\n", str);
-}
 
 void stmt_print(struct list_head *head, FILE *o)
 {
@@ -61,7 +53,12 @@ void stmt_print(struct list_head *head, FILE *o)
 int main(int argc, char *argv[])
 {
 	LIST_HEAD(lh);
-	lasm_parse(&lh);
+	yyscan_t s = NULL;
+	int r = lasm_lex_init(&s);
+	if (r != 0)
+		fprintf(stderr, "bleh.");
+
+	lasm_parse(&lh, s);
 
 	stmt_print(&lh, stdout);
 

@@ -1,13 +1,12 @@
 
 %{
 
-
 #include "lasm.h"
 #include "lasm.tab.h"
 #include "lasm_param.h"
 #define YY_NO_INPUT    /* hides warning about "input defined but not used" */
 
-static void *memdup(void *s, size_t l)
+static inline void *memdup(void *s, size_t l)
 {
 	void *r = malloc(l);
 	if (r)
@@ -67,3 +66,4 @@ ID       [[:alnum:]]
 .	   printf("*** Unk '%s'\n", yytext);
 
 %%
+

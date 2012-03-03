@@ -3,13 +3,9 @@
 
 #include "list.h"
 
-typedef struct lasm_parse_t {
-	void *scanner;
-	struct list_head stmt_list;
-} lasm_parse_t;
+#define YYLEX_PARAM   scanner
+/* should be lasm_parse_t */
 
-#define YYPARSE_PARAM data
-#define YYLEX_PARAM   (((lasm_parse_t *)data)->scanner)
-
+int lasm_parse(struct list_head *stmt_list, yyscan_t scanner);
 
 #endif

@@ -2,8 +2,14 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "lasm.h"
+#include "lasm.tab.h"
+#include "lasm.yy.h"
 #include "lasm_param.h"
 %}
+
+%parse-param { struct list_head *stmt_list }
+%parse-param { yyscan_t scanner }
+
 %define api.pure
 %union {
 	struct list_head head;
@@ -16,7 +22,7 @@
 }
 %{
 #include "lasm.yy.h"
-void lasm_error(char *msg)
+void lasm_error(struct list_head *data, void *scanner, char *msg)
 {
 	fprintf(stderr, "parse error: %s", msg);
 	exit(1);
@@ -45,7 +51,7 @@ void lasm_error(char *msg)
 
 program : statements
 	{
-		struct list_head *h = &((lasm_parse_t *)data)->stmt_list ;
+		struct list_head *h = stmt_list;
 		list_head_init(h);
 		list_attach_head(h, &$1->l);
 		$$ = h;

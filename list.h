@@ -6,6 +6,11 @@ struct list_head { struct list_head *prev, *next; };
 #define LIST_HEAD(lhead) struct list_head lhead = \
 	{ .prev = &lhead, .next = &lhead }
 
+static inline void list_init(struct list_head *head)
+{
+	head->prev = head->next = head;
+}
+
 #define container_of(item, type, member) \
 		((type *)((char *)(item) - offsetof(type, member)))
 #define list_entry(ptr, type, member) container_of(ptr, type, member)
