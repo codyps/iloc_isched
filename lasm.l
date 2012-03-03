@@ -24,8 +24,6 @@ static void yyunput (int c,char *buf_ptr, void *yyscanner) __attribute__((unused
 %option bison-bridge
 %pointer
 
-%x IN_COMMENT
-
 WT       [ \t]
 SYM      [,:=>]
 NUM_FST  [-0-9]
@@ -38,22 +36,6 @@ ID       [[:alnum:]]
 {WT}+      /* ignore whitespace */;
 --[^\n]*   /* ignore comments */;
 \/\/[^\n]* /* ignore comments */;
-
-"/*"	{
-	//printf("Start comment\n");
-	BEGIN(IN_COMMENT);
-}
-
-<IN_COMMENT>{
-"*/"    {
-	//printf("End comment\n");
-	BEGIN(0);
-	}
-.*	{ // printf("Comment Line\n");
-	}
-}
-
-\/\*.*\*\/ printf("Big comment\n");
 
 \n         return STMT_END;
 :          return COLON;
