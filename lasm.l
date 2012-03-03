@@ -1,7 +1,7 @@
 
 %{
 
-#include "lasm.h"
+#include "parse_tree.h"
 #include "lasm.tab.h"
 #include "lasm_param.h"
 #define YY_NO_INPUT    /* hides warning about "input defined but not used" */
@@ -26,7 +26,6 @@ static void yyunput (int c,char *buf_ptr, void *yyscanner) __attribute__((unused
 
 WT       [ \t]
 SYM      [,:=>]
-NUM_FST  [-0-9]
 NUM      [0-9]
 ID_FST   [[:alpha:]]
 ID       [[:alnum:]]
@@ -39,12 +38,11 @@ ID       [[:alnum:]]
 
 \n         return STMT_END;
 :          return COLON;
+=>         return ARROW;
 
 {ID_FST}{ID}* { SAVE_TOKEN; return IDENT; }
-
-{NUM}+     { SAVE_TOKEN; return NUM;   }
-=>         { SAVE_TOKEN; return ARROW; }
-,          { SAVE_TOKEN; return COMMA; }
+-?{NUM}+      { SAVE_TOKEN; return NUM;   }
+,          /* ignore, used as seperator */;
 .	   printf("*** Unk '%s'\n", yytext);
 
 %%

@@ -1,9 +1,3 @@
-/*
-   Simple example program 
-*/
-
-
-/* HI */
 // Assign STATIC_AREA_ADDRESS to register "r0"
          loadI 1024     => r0
 // Store value 6 into variable a with @a = 0;

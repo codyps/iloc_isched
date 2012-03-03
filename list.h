@@ -18,10 +18,37 @@ static inline void list_init(struct list_head *head)
 #define list_for_each_prev(pos, head) \
 	for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
-#define list_for_each_entry_prev(pos, head, member)                  \
-	for (pos = list_entry((head)->prev, typeof(*pos), member);    \
-	     &pos->member != (head);                                  \
+#define list_for_each(pos, head) \
+	for (pos = (head)->next; pos != (head); pos = pos->prev)
+
+#define list_for_each_safe(pos, tmp, head)				\
+	for (pos = (head)->next, tmp = pos->next; pos != (head); pos = tmp, tmp = pos->next)
+
+#define list_for_each_entry(pos, head, member)				\
+	for (pos = list_entry((head)->next, typeof(*pos), member);	\
+	     (&pos->member) != (head);					\
+	     pos = list_entry(pos->member.next, typeof(*pos), member))
+
+#define list_for_each_entry_prev(pos, head, member)			\
+	for (pos = list_entry((head)->prev, typeof(*pos), member);	\
+	     &pos->member != (head);					\
 	     pos = list_entry(pos->member.prev, typeof(*pos), member))
+
+/* typeof(pos) == typeof(tmp) */
+#define list_for_each_entry_safe(pos, tmp, head, member)					\
+	for (pos = list_entry((head)->next, typeof(*pos), member),				\
+			tmp = list_entry(pos->member.next, typeof(*pos), member);		\
+	     &pos->member != (head);								\
+	     pos = list_entry(tmp, typeof(*pos), member),					\
+			tmp = list_entry(pos->member.next, typeof(*pos), member))
+
+static inline void list_del(struct list_head *elem)
+{
+	struct list_head *n = elem->next, *p = elem->prev;
+	p->next = n;
+	n->prev = p;
+	list_init(elem);
+}
 
 /* @head - a 'head', which may already have other nodes attached to it
  * @n    - a new node which does not have any attached nodes. */

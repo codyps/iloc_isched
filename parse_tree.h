@@ -1,5 +1,5 @@
-#ifndef LASM_H_
-#define LASM_H_
+#ifndef PARSE_TREE_H_
+#define PARSE_TREE_H_
 
 #include "list.h"
 
@@ -16,12 +16,13 @@ typedef struct arg_t {
 typedef struct stmt_t {
 	struct list_head l;
 	char   *opcode;
-	arg_t  *args;
-	attr_t *attrs;
+	struct list_head arg_in_list;
+	struct list_head arg_out_list;
+	struct list_head attr_list;
 } stmt_t;
 
 arg_t  *arg_mk(char *arg);
-stmt_t *stmt_mk(char *opcode, arg_t *args, attr_t *attrs);
+stmt_t *stmt_mk(char *opcode, arg_t *args_in, arg_t *args_out, attr_t *attrs);
 attr_t *attr_label_mk(char *label);
 
 #endif

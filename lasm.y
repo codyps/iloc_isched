@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 #include <stddef.h>
-#include "lasm.h"
+#include "parse_tree.h"
 #include "lasm.tab.h"
 #include "lasm.yy.h"
 #include "lasm_param.h"
@@ -30,7 +30,6 @@ void lasm_error(struct list_head *data, void *scanner, char *msg)
 %}
 
 %left  COLON
-%token <str> COMMA
 %token <str> ARROW
 %token <str> NUM
 %token <str> IDENT
@@ -43,6 +42,7 @@ void lasm_error(struct list_head *data, void *scanner, char *msg)
 %type <attr>      attr       /* currently, a synonym for label */
 %type <attr>      label      /* presently the only attribute */
 %type <arg>       args       /* a list of arguments */
+%type <arg>       output_args
 %type <str>       arg
 
 %start program
@@ -69,10 +69,14 @@ statements : /* empty */
 		}
            }
 
-statement : attr_list IDENT args STMT_END
+output_args : /* empty */
+	    { $$ = NULL; }
+	    | ARROW args
+	    { $$ = $2; }
+
+statement : attr_list IDENT args output_args STMT_END
 	  {
-		printf("statment: '%s'\n", $2);
-		$$ = stmt_mk($2, $3, $1);
+		$$ = stmt_mk($2, $3, $4, $1);
 	  }
 
 attr_list : /* empty */
@@ -107,9 +111,7 @@ args : /* empty */
      }
 
 arg : IDENT
-    | ARROW
     | NUM
-    | COMMA
 
 %%
 
