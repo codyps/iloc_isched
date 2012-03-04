@@ -1,28 +1,52 @@
+all::
+
 CFLAGS = -g -Wall -MMD -std=gnu99
 LDFLAGS=
 
 CC     = gcc
-CCLD   = gcc
 LEX    = flex
 YACC   = bison
 RM     = rm -rf
 
 ifndef V
 	QUIET_CC   = @ echo '    ' CC $@;
-	QUIET_LD   = @ echo '    ' LD $@;
+	QUIET_LINK = @ echo '    ' LD $@;
 	QUIET_LEX  = @ echo '    ' LEX $@;
 	QUIET_YACC = @ echo '    ' YACC $@;
 endif
 
+
+.PHONY: FORCE
+
+### Detect prefix changes
+## Use "#')" to hack around vim highlighting.
+TRACK_CFLAGS = $(CC):$(subst ','\'',$(ALL_CFLAGS)) #')
+
+GIT-CFLAGS: FORCE
+	@FLAGS='$(TRACK_CFLAGS)'; \
+	    if test x"$$FLAGS" != x"`cat GIT-CFLAGS 2>/dev/null`" ; then \
+		echo 1>&2 "    * new build flags or prefix"; \
+		echo "$$FLAGS" >GIT-CFLAGS; \
+            fi
+
+TRACK_LDFLAGS = $(subst ','\'',$(ALL_LDFLAGS)) #')
+
+GIT-LDFLAGS: FORCE
+	@FLAGS='$(TRACK_LDFLAGS)'; \
+	    if test x"$$FLAGS" != x"`cat GIT-LDFLAGS 2>/dev/null`" ; then \
+		echo 1>&2 "    * new link flags"; \
+		echo "$$FLAGS" >GIT-LDFLAGS; \
+            fi
 .SECONDARY:
 
-lasm: lasm.yy.o lasm.tab.o lasm_main.o
-lasm.yy.o: lasm.tab.h
-# For fileno used by lex
-#lasm.yy.o : CFLAGS+=-D_POSIX_SOURCE
-#lasm.tab.o: CFLAGS+=-DYYPARSE_PARAM=stmt_head
+all:: lasm
 
-%.o : %.c
+OBJ = lasm.yy.o lasm.tab.o lasm_main.o parse_tree.o
+lasm.yy.o: lasm.tab.h
+lasm : $(OBJ) GIT-LDFLAGS GIT-CFLAGS
+	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ)
+
+%.o : %.c GIT-CFLAGS
 	$(QUIET_CC)$(CC) $(CFLAGS) -c -o $@ $<
 
 %.dot.png: %.dot
@@ -38,7 +62,5 @@ lasm.yy.o: lasm.tab.h
 clean :
 	$(RM) *.[od] *.tab.[ch] *.yy.[ch] *.output lasm
 
-% :
-	$(QUIET_LD)$(CCLD) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 -include $(wildcard *.d)
