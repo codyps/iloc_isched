@@ -5,3 +5,6 @@
 *.tab.*
 *.out
 *.output
+/TRACK-CFLAGS
+/TRACK-LDFLAGS
+/lasm

@@ -1,7 +1,12 @@
 all::
 
-CFLAGS = -g -Wall -MMD -std=gnu99
+CFLAGS = -g -O2
 LDFLAGS=
+
+
+ALL_CFLAGS = $(CFLAGS) -std=gnu99 -MMD -Wall
+ALL_LDFLAGS = $(LDFLAGS)
+
 
 CC     = gcc
 LEX    = flex
@@ -22,20 +27,20 @@ endif
 ## Use "#')" to hack around vim highlighting.
 TRACK_CFLAGS = $(CC):$(subst ','\'',$(ALL_CFLAGS)) #')
 
-GIT-CFLAGS: FORCE
+TRACK-CFLAGS: FORCE
 	@FLAGS='$(TRACK_CFLAGS)'; \
-	    if test x"$$FLAGS" != x"`cat GIT-CFLAGS 2>/dev/null`" ; then \
+	    if test x"$$FLAGS" != x"`cat TRACK-CFLAGS 2>/dev/null`" ; then \
 		echo 1>&2 "    * new build flags or prefix"; \
-		echo "$$FLAGS" >GIT-CFLAGS; \
+		echo "$$FLAGS" >TRACK-CFLAGS; \
             fi
 
 TRACK_LDFLAGS = $(subst ','\'',$(ALL_LDFLAGS)) #')
 
-GIT-LDFLAGS: FORCE
+TRACK-LDFLAGS: FORCE
 	@FLAGS='$(TRACK_LDFLAGS)'; \
-	    if test x"$$FLAGS" != x"`cat GIT-LDFLAGS 2>/dev/null`" ; then \
+	    if test x"$$FLAGS" != x"`cat TRACK-LDFLAGS 2>/dev/null`" ; then \
 		echo 1>&2 "    * new link flags"; \
-		echo "$$FLAGS" >GIT-LDFLAGS; \
+		echo "$$FLAGS" >TRACK-LDFLAGS; \
             fi
 .SECONDARY:
 
@@ -43,11 +48,11 @@ all:: lasm
 
 OBJ = lasm.yy.o lasm.tab.o lasm_main.o parse_tree.o
 lasm.yy.o: lasm.tab.h
-lasm : $(OBJ) GIT-LDFLAGS GIT-CFLAGS
-	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ)
+lasm : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
+	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o $@ $(OBJ)
 
-%.o : %.c GIT-CFLAGS
-	$(QUIET_CC)$(CC) $(CFLAGS) -c -o $@ $<
+%.o : %.c TRACK-CFLAGS
+	$(QUIET_CC)$(CC) $(ALL_CFLAGS) -c -o $@ $<
 
 %.dot.png: %.dot
 	dot -Tpng $< -o $@
