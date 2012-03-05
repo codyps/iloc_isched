@@ -1,6 +1,6 @@
 all::
 
-CFLAGS = -g -O2
+CFLAGS = -ggdb -O0
 LDFLAGS=
 
 

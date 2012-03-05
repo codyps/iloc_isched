@@ -31,9 +31,9 @@ arg_t  *arg_mk(char *arg)
 		list_head_init(&x->l);
 		x->arg  = arg;
 
-		errno = 0;
-		int v = atoi(arg);
-		if (errno) {
+		int v = 0;
+		int r = sscanf(arg, "%d", &v);
+		if (r != 1) {
 			/* not a number, must be a reg */
 			x->type = ARG_REG;
 			x->ival = 0;
