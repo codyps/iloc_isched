@@ -52,12 +52,15 @@ static inline void reg_access_init(reg_access_t *sp, reg_t *r, stmt_t *stmt, arg
 	sp->arg        = arg;
 
 	struct list_head *po = &r->ra_act[!writer];
+	DEBUG_PR("reg: %s", r->regname);
 	if (list_has_entry(po)) {
-		DEBUG_PR("po->prev = %p", po->prev);
+		DEBUG_PR(" po->prev = %p", po->prev);
 		sp->prev_other = list_entry(po->prev, reg_access_t, act);
-		DEBUG_PR("prev_other <= %p", sp->prev_other);
+		DEBUG_PR(" prev_other <= %p", sp->prev_other);
 	} else {
+		DEBUG_PR(" no assign");
 		sp->prev_other = NULL;
+		DEBUG_PR(" prev_other <= %p", sp->prev_other);
 	}
 }
 
@@ -80,10 +83,12 @@ reg_access_t *reg_add_access(reg_t *r, stmt_t *stmt, arg_t *arg, bool writer)
 
 	reg_access_init(sp, r, stmt, arg, writer);
 
+	DEBUG_PR("thing: &s->all: %p &sp->act %p", &sp->all, &sp->act);
+
 	list_add_prev(&r->ra_all, &sp->all);
 	list_add_prev(&r->ra_act[writer], &sp->act);
 
-	struct list_head *l = &r->ra_act[writer];
+	struct list_head *l = &r->ra_all;
 	DEBUG_PR("writer: %d, prev: %p, next %p", writer, l->prev, l->next);
 	return sp;
 }
@@ -152,8 +157,6 @@ int reg_accessed(struct reg_set *t, stmt_t *stmt, arg_t *arg, bool written)
 	if (!found_reg)
 		return -1;
 
-	DEBUG_PR("found reg = %p", found_reg);
-
 	return _reg_accessed(t, stmt, &arg->dep, arg, written, found_reg);
 }
 
@@ -167,7 +170,6 @@ int stmt_populate_deps(stmt_t *e, struct reg_set *rs)
 {
 	arg_t *a;
 	arg_list_for_each(a, &e->arg_in_list) {
-		DEBUG_PR("looking at somthing... %d", a->type);
 		if (a->type == ARG_REG)
 			reg_accessed(rs, e, a, REG_READ);
 	}
@@ -289,7 +291,8 @@ int main(int argc, char *argv[])
 	if (r < 0)
 		return -1;
 
-	reg_set_t rs = {};
+	reg_set_t rs;
+	reg_set_init(&rs);
 
 	r = stmt_list_populate_deps(&lh, &rs);
 	if (r < 0) {
