@@ -72,9 +72,7 @@ struct stmt_t {
 
 	YYLTYPE location;
 	instr_t *instr;
-
-	struct list_head real_deps;
-	struct list_head anti_deps;
+	int inum;
 };
 
 arg_t  *arg_mk(char *arg);

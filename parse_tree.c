@@ -96,6 +96,7 @@ int stmt_list_match_instrs(const struct list_head *head)
 {
 	stmt_t *e;
 	int err = 0;
+	int inum = 0;
 	stmt_list_for_each(e, head) {
 		instr_t *i = lookup_instr(ops, OPS_CT, e->opcode);
 		if (!i) {
@@ -104,6 +105,8 @@ int stmt_list_match_instrs(const struct list_head *head)
 		} else {
 			e->instr = i;
 		}
+		e->inum = inum;
+		inum++;
 	}
 	return -err;
 }

@@ -153,7 +153,7 @@ int stmt_list_populate_deps(struct list_head *stmt_list, struct reg_set *rs)
 {
 	stmt_t *e;
 	stmt_list_for_each(e, stmt_list) {
-		DEBUG_PR("processing stmt: %s", e->opcode);
+		//DEBUG_PR("processing stmt: %s", e->opcode);
 		int r = stmt_populate_deps(e, rs);
 		if (r < 0) {
 			WARN_STMT(e, "could not generate deps");
@@ -162,6 +162,57 @@ int stmt_list_populate_deps(struct list_head *stmt_list, struct reg_set *rs)
 	}
 
 	return 0;
+}
+
+void arg_list_emit(struct list_head *arg_list, FILE *o)
+{
+	arg_t *a;
+	arg_list_for_each(a, arg_list) {
+		if (a->l.next != arg_list)
+			fprintf(o, "%s, ", a->arg);
+		else
+			fputs(a->arg, o);
+	}
+}
+
+void stmt_emit_iloc(stmt_t *e, FILE *o)
+{
+	fputs(e->instr->name, o);
+
+	arg_list_emit(&e->arg_in_list, o);
+	fputs(" => ", o);
+	arg_list_emit(&e->arg_out_list, o);
+}
+
+void arg_list_deps_print(struct list_head *arg_list, int stmt_parent, FILE *o)
+{
+	arg_t *a;
+	int i = 0;
+	arg_list_for_each(a, arg_list) {
+		fprintf(o, "arg_%d_%d [label=\"%s\"]\n", stmt_parent, i, a->arg);
+		fprintf(o, "arg_%d_%d -> stmt_%d\n",     stmt_parent, i, stmt_parent);
+		i++;
+	}
+}
+
+void stmt_deps_print(stmt_t *e, FILE *o)
+{
+	fprintf(o, "stmt_%d [label=\"", e->inum);
+	stmt_emit_iloc(e, o);
+	fprintf(o, "\"]\n");
+
+	arg_list_deps_print(&e->arg_in_list,  e->inum, o);
+	arg_list_deps_print(&e->arg_out_list, e->inum, o);
+}
+
+void stmt_list_deps_print(struct list_head *stmt_list, FILE *o)
+{
+	stmt_t *e;
+	fprintf(o, "digraph g {\n");
+	stmt_list_for_each(e, stmt_list) {
+		stmt_deps_print(e, o);
+	}
+	fprintf(o, "}\n");
 }
 
 int main(int argc, char *argv[])
@@ -187,7 +238,9 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	stmt_list_print(&lh, stdout);
+	stmt_list_deps_print(&lh, stdout);
+
+	stmt_list_print(&lh, stderr);
 	stmt_list_free(&lh);
 
 	return 0;
