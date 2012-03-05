@@ -21,7 +21,7 @@ static void yyunput (int c,char *buf_ptr, void *yyscanner) __attribute__((unused
 %}
 
 %option reentrant noyywrap never-interactive nounistd
-%option bison-bridge
+%option bison-bridge bison-locations
 %pointer
 
 WT       [ \t]

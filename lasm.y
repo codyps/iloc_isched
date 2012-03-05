@@ -10,7 +10,9 @@
 %parse-param { struct list_head *stmt_list }
 %parse-param { yyscan_t scanner }
 
+%locations
 %define api.pure
+
 %union {
 	struct list_head head;
 	struct list_head *list;
@@ -22,7 +24,7 @@
 }
 %{
 #include "lasm.yy.h"
-void lasm_error(struct list_head *data, void *scanner, char *msg)
+void lasm_error(YYLTYPE *loc, struct list_head *data, void *scanner, char *msg)
 {
 	fprintf(stderr, "parse error: %s", msg);
 	exit(1);
@@ -76,7 +78,7 @@ output_args : /* empty */
 
 statement : attr_list IDENT args output_args STMT_END
 	  {
-		$$ = stmt_mk($2, $3, $4, $1);
+		$$ = stmt_mk($2, $3, $4, $1, @$);
 	  }
 
 attr_list : /* empty */
