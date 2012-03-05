@@ -79,6 +79,8 @@ struct stmt_t {
 	instr_t *instr;
 	int inum;
 	dep_t mem_dep;
+
+	unsigned cum_latency;
 };
 
 arg_t  *arg_mk(char *arg);

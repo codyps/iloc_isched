@@ -175,7 +175,6 @@ int stmt_populate_deps(stmt_t *e, struct reg_set *rs)
 	}
 
 	if (e->instr->mem_access == MEM_IN_RD) {
-		/* XXX: add memory read */
 		mem_accessed(rs, e, REG_READ);
 	}
 
@@ -186,7 +185,6 @@ int stmt_populate_deps(stmt_t *e, struct reg_set *rs)
 	}
 
 	if (e->instr->mem_access == MEM_OUT_WR) {
-		/* XXX: add memory write */
 		mem_accessed(rs, e, REG_WRITE);
 	}
 

@@ -67,5 +67,10 @@ lasm : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
 clean :
 	$(RM) *.[od] *.tab.[ch] *.yy.[ch] *.output lasm
 
+%.dot.png : %.dot
+	dot -Tpng -Grankdir=BT -O $<
+
+%.dot : %.iloc lasm
+	./lasm < $< > $@
 
 -include $(wildcard *.d)

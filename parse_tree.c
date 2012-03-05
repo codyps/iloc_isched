@@ -19,7 +19,7 @@ static const instr_t ops [] = {
 	OP_WR(store,   5),
 	OP_WR(storeAO, 5),
 	OP_WR(storeAI, 5),
-	OP_WR(output,  1)
+	OP_RD(output,  1)
 };
 
 #define OPS_CT ARRAY_SIZE(ops)
