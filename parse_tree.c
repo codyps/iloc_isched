@@ -74,9 +74,8 @@ stmt_t *stmt_mk(char *opcode, arg_t *args_in, arg_t *args_out, attr_t *attrs, YY
 		x->instr = 0;
 		x->location = location;
 		dep_init(&x->mem_dep);
-		x->has_dep = false;
 		list_init(&x->rev_dep_list);
-		x->cum_latency = MAX_LATENCY;
+		x->cum_latency = 0;
 
 	}
 	return x;

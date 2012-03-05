@@ -75,7 +75,9 @@ typedef struct rev_dep_t {
 } rev_dep_t;
 
 struct stmt_t {
-	struct list_head l;
+	struct list_head l;          /* for our list of stmts in a block */
+	struct list_head ready_list; /* for placing this statement in the ready list */
+
 	char   *opcode;
 	struct list_head arg_in_list;
 	struct list_head arg_out_list;
@@ -83,12 +85,12 @@ struct stmt_t {
 
 	YYLTYPE location;
 	instr_t *instr;
-	int inum;
+	unsigned inum;
 	dep_t mem_dep;
-	bool has_dep; /* someone depends on this */
 	struct list_head rev_dep_list; /* rev_dep_t */
 
 	unsigned cum_latency;
+
 };
 
 #define MAX_LATENCY UINT_MAX

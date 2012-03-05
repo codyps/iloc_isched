@@ -52,7 +52,7 @@ static inline void reg_access_init(reg_access_t *sp, reg_t *r, stmt_t *stmt, arg
 	sp->arg        = arg;
 
 	struct list_head *po = &r->ra_act[!writer];
-	if (list_has_entry(po)) {
+	if (!list_is_empty(po)) {
 		sp->prev_other = list_entry(po->prev, reg_access_t, act);
 	} else {
 		sp->prev_other = NULL;
@@ -104,6 +104,31 @@ reg_access_t *reg_prev_access_with_type(reg_t *r, reg_access_t *cur, bool writte
 	return cur->prev_other;
 }
 
+bool stmt_has_fwd_dep(stmt_t *e)
+{
+	arg_t *a;
+	if (e->mem_dep.dep)
+		return true;
+
+
+	arg_list_for_each(a, &e->arg_in_list) {
+		if (a->dep.dep)
+			return true;
+	}
+
+	arg_list_for_each(a, &e->arg_out_list) {
+		if (a->dep.dep)
+			return true;
+	}
+
+	return false;
+}
+
+bool stmt_has_rev_dep(stmt_t *e)
+{
+	return !list_is_empty(&e->rev_dep_list);
+}
+
 int stmt_add_rev_dep(stmt_t *dep_on, stmt_t *rev)
 {
 	rev_dep_t *rd = malloc(sizeof(*rd));
@@ -128,13 +153,11 @@ int stmt_add_dep(stmt_t *stmt, dep_t *dep, bool written, reg_access_t *curr_ra, 
 
 	if (!written && prev_ra->writer) {
 		/* RAW */
-		prev_ra->stmt->has_dep = true;
 		stmt_add_rev_dep(prev_ra->stmt, stmt);
 		dep->dep      = prev_ra->stmt;
 		dep->dep_type = DEP_RAW;
 	} else if (written && !prev_ra->writer) {
 		/* WAR */
-		prev_ra->stmt->has_dep = true;
 		stmt_add_rev_dep(prev_ra->stmt, stmt);
 		dep->dep      = prev_ra->stmt;
 		dep->dep_type = DEP_WAR;
@@ -234,13 +257,13 @@ void stmt_emit_iloc(stmt_t *e, FILE *o)
 void dep_print(dep_t *dep, int stmt_parent, FILE *o)
 {
 	if (dep->dep) {
-		char *shape;
+		char *style;
 		if (dep->dep_type == DEP_WAR) {
-			shape = "dot";
+			style = "dashed";
 		} else {
-			shape = "normal";
+			style = "solid";
 		}
-		fprintf(o, "stmt_%d -> stmt_%d [shape=\"%s\"]\n", stmt_parent, dep->dep->inum, shape);
+		fprintf(o, "stmt_%d -> stmt_%d [style=\"%s\"]\n", stmt_parent, dep->dep->inum, style);
 	}
 }
 
@@ -258,7 +281,7 @@ void arg_list_deps_print(struct list_head *arg_list, int stmt_parent, FILE *o)
 
 void stmt_deps_print(stmt_t *e, FILE *o)
 {
-	fprintf(o, "stmt_%d [label=\"", e->inum);
+	fprintf(o, "stmt_%d [label=\"(%u) ", e->inum, e->cum_latency);
 	stmt_emit_iloc(e, o);
 	fprintf(o, "\"]\n");
 
@@ -285,7 +308,7 @@ void stmt_calc_cum_latency(stmt_t *e, unsigned prev_latency)
 
 	unsigned ilate = e->instr->latency;
 	unsigned curlate = ilate + prev_latency;
-	if (e->cum_latency > curlate) {
+	if (e->cum_latency < curlate) {
 		e->cum_latency = curlate;
 
 		arg_t *a;
@@ -305,12 +328,26 @@ void stmt_list_calc_cum_latency(struct list_head *stmt_list)
 {
 	stmt_t *e;
 	stmt_list_for_each(e, stmt_list) {
-		if (e->has_dep)
+		if (stmt_has_rev_dep(e))
 			continue;
 
 		stmt_calc_cum_latency(e, 0);
 	}
 }
+
+void stmt_list_schedule(struct list_head *stmt_list)
+{
+	stmt_t *e;
+	LIST_HEAD(ready);
+	stmt_list_for_each(e, stmt_list) {
+		if (stmt_has_fwd_dep(e))
+			continue;
+
+		/* operate only on the leaves */
+		list_add_prev(&ready, &e->ready_list);
+	}
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -335,6 +372,8 @@ int main(int argc, char *argv[])
 		WARN("error in populating dependencies.");
 		return -1;
 	}
+
+	stmt_list_calc_cum_latency(&lh);
 
 	stmt_list_deps_print(&lh, stdout);
 

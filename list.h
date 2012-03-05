@@ -45,9 +45,9 @@ static inline void list_init(struct list_head *head)
 	     pos = list_entry(tmp, typeof(*pos), member),					\
 			tmp = list_entry(pos->member.next, typeof(*pos), member))
 
-static inline bool list_has_entry(struct list_head *head)
+static inline bool list_is_empty(struct list_head *head)
 {
-	return head != head->next;
+	return head == head->next;
 }
 
 static inline void list_del(struct list_head *elem)
