@@ -30,6 +30,8 @@ typedef struct reg_t {
 	struct list_head ra_act[2]; /* index by writter, reg_access_t */
 } reg_t;
 
+#define ra_act_list_for_each(ra, head) list_for_each_entry(ra, head, act)
+
 typedef struct reg_set {
 	void *root;
 	reg_t mem;
@@ -99,7 +101,7 @@ reg_t *reg_find(struct reg_set *rs, char *regname)
 	return *found_reg;
 }
 
-reg_access_t *reg_prev_access_with_type(reg_t *r, reg_access_t *cur, bool written)
+reg_access_t *ra_prev_opposite_access(reg_access_t *cur)
 {
 	return cur->prev_other;
 }
@@ -107,9 +109,8 @@ reg_access_t *reg_prev_access_with_type(reg_t *r, reg_access_t *cur, bool writte
 bool stmt_has_fwd_dep(stmt_t *e)
 {
 	arg_t *a;
-	if (e->mem_dep.dep)
+	if (!list_is_empty(&e->mem_dep_list))
 		return true;
-
 
 	arg_list_for_each(a, &e->arg_in_list) {
 		if (a->dep.dep)
@@ -142,40 +143,70 @@ int stmt_add_rev_dep(stmt_t *dep_on, stmt_t *rev)
 	return 0;
 }
 
-int stmt_add_dep(stmt_t *stmt, dep_t *dep, bool written, reg_access_t *curr_ra, reg_t *reg)
+enum dep_type ra_get_dep_type(reg_access_t *curr_ra)
 {
-	/* the last access of the type we are not */
-	reg_access_t *prev_ra = reg_prev_access_with_type(reg, curr_ra, !written);
-	if (!prev_ra) {
-		/* we are the first access, no dependency */
-		return 0;
-	}
+	reg_access_t *prev_ra = ra_prev_opposite_access(curr_ra);
+	if (!prev_ra)
+		return DEP_NONE;
 
-	if (!written && prev_ra->writer) {
-		/* RAW */
-		stmt_add_rev_dep(prev_ra->stmt, stmt);
-		dep->dep      = prev_ra->stmt;
-		dep->dep_type = DEP_RAW;
-	} else if (written && !prev_ra->writer) {
-		/* WAR */
-		stmt_add_rev_dep(prev_ra->stmt, stmt);
-		dep->dep      = prev_ra->stmt;
-		dep->dep_type = DEP_WAR;
-	} else {
-		/* some dep I don't care about */
-		DEBUG_PR("go a unhandled dep type: written: %d ; prev written: %d", written, prev_ra->writer);
-	}
+	if (!curr_ra->writer && prev_ra->writer)
+		return DEP_RAW;
+
+	if (curr_ra->writer && !prev_ra->writer)
+		return DEP_WAR;
+
+	DEBUG_PR("got a unhandled dep type: written: %d ; prev written: %d", curr_ra->writer, prev_ra->writer);
+	return DEP_NONE;
+}
+
+int dep_add(reg_access_t *prev, stmt_t *curr, dep_t *dep, enum dep_type dt)
+{
+	stmt_add_rev_dep(prev->stmt, curr);
+	dep->dep      = prev->stmt;
+	dep->dep_type = dt;
 
 	return 0;
 }
 
-int _reg_accessed(struct reg_set *t, stmt_t *stmt, dep_t *dep, arg_t *arg, bool written, reg_t *found_reg)
+int stmt_add_dep(stmt_t *stmt, dep_t *dep, reg_access_t *curr_ra)
 {
-	reg_access_t *ra = reg_add_access(found_reg, stmt, arg, written);
-	if (!ra)
-		return -1;
+	enum dep_type dt = ra_get_dep_type(curr_ra);
 
-	return stmt_add_dep(stmt, dep, written, ra, found_reg);
+	if (dt == DEP_NONE)
+		return 0;
+
+	reg_access_t *prev_ra = ra_prev_opposite_access(curr_ra);
+	dep_add(prev_ra, stmt, dep, dt);
+
+	return 0;
+}
+
+mem_dep_t *stmt_create_mem_dep(stmt_t *e)
+{
+	mem_dep_t *md = malloc(sizeof(*md));
+	if (!md)
+		return NULL;
+
+	dep_init(&md->dep);
+
+	list_add_prev(&e->mem_dep_list, &md->l);
+	return md;
+}
+
+int stmt_add_mem_dep(reg_access_t *curr_ra, reg_t *reg)
+{
+	enum dep_type dt = ra_get_dep_type(curr_ra);
+	if (dt == DEP_NONE)
+		return 0;
+
+	reg_access_t *prev_ra;
+	stmt_t *e = curr_ra->stmt;
+	ra_act_list_for_each(prev_ra, &reg->ra_act[!curr_ra->writer]) {
+		mem_dep_t *md = stmt_create_mem_dep(e);
+		dep_add(prev_ra, e, &md->dep, dt);
+	}
+
+	return 0;
 }
 
 int reg_accessed(struct reg_set *t, stmt_t *stmt, arg_t *arg, bool written)
@@ -184,13 +215,22 @@ int reg_accessed(struct reg_set *t, stmt_t *stmt, arg_t *arg, bool written)
 	if (!found_reg)
 		return -1;
 
-	return _reg_accessed(t, stmt, &arg->dep, arg, written, found_reg);
+	reg_access_t *ra = reg_add_access(found_reg, stmt, arg, written);
+	if (!ra)
+		return -1;
+
+	return stmt_add_dep(stmt, &arg->dep, ra);
 }
+
 
 int mem_accessed(reg_set_t *rs, stmt_t *e, bool written)
 {
-	reg_t *r = &rs->mem;
-	return _reg_accessed(rs, e, &e->mem_dep, NULL, written, r);
+	reg_t *r   = &rs->mem;
+	reg_access_t *ra = reg_add_access(r, e, NULL, written);
+	if (!ra)
+		return -1;
+
+	return stmt_add_mem_dep(ra, r);
 }
 
 int stmt_populate_deps(stmt_t *e, struct reg_set *rs)
@@ -270,12 +310,8 @@ void dep_print(dep_t *dep, int stmt_parent, FILE *o)
 void arg_list_deps_print(struct list_head *arg_list, int stmt_parent, FILE *o)
 {
 	arg_t *a;
-	int i = 0;
 	arg_list_for_each(a, arg_list) {
-		//fprintf(o, "arg_%d_%d [label=\"%s\"]\n", stmt_parent, i, a->arg);
-		//fprintf(o, "arg_%d_%d -> stmt_%d [dir=\"none\"]\n", stmt_parent, i, stmt_parent);
 		dep_print(&a->dep, stmt_parent, o);
-		i++;
 	}
 }
 
@@ -288,7 +324,10 @@ void stmt_deps_print(stmt_t *e, FILE *o)
 	arg_list_deps_print(&e->arg_in_list,  e->inum, o);
 	arg_list_deps_print(&e->arg_out_list, e->inum, o);
 
-	dep_print(&e->mem_dep, e->inum, o);
+	mem_dep_t *md;
+	mem_dep_list_for_each(md, &e->mem_dep_list) {
+		dep_print(&md->dep, e->inum, o);
+	}
 }
 
 void stmt_list_deps_print(struct list_head *stmt_list, FILE *o)
@@ -320,7 +359,10 @@ void stmt_calc_cum_latency(stmt_t *e, unsigned prev_latency)
 			stmt_calc_cum_latency(a->dep.dep, curlate);
 		}
 
-		stmt_calc_cum_latency(e->mem_dep.dep, curlate);
+		mem_dep_t *md;
+		mem_dep_list_for_each(md, &e->mem_dep_list) {
+			stmt_calc_cum_latency(md->dep.dep, curlate);
+		}
 	}
 }
 

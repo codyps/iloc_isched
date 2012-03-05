@@ -4,7 +4,7 @@ CFLAGS = -ggdb -O0
 LDFLAGS=
 
 
-ALL_CFLAGS = $(CFLAGS) -std=gnu99 -MMD -Wall
+ALL_CFLAGS = $(CFLAGS) -std=gnu99 -MMD -Wall -Wextra
 ALL_LDFLAGS = $(LDFLAGS)
 
 
@@ -48,6 +48,8 @@ all:: lasm
 
 OBJ = lasm.yy.o lasm.tab.o lasm_main.o parse_tree.o
 lasm.yy.o: lasm.tab.h
+lasm.tab.o lasm.yy.o: ALL_CFLAGS:=$(filter-out -Wextra,$(ALL_CFLAGS))
+
 lasm : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o $@ $(OBJ)
 

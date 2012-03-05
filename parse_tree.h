@@ -61,6 +61,11 @@ typedef struct dep_t {
 	enum dep_type dep_type;
 } dep_t;
 
+typedef struct mem_dep_t {
+	struct list_head l;
+	dep_t dep;
+} mem_dep_t;
+
 struct arg_t {
 	struct list_head l; /* elem in a list of args in a stmt */
 	char *arg;
@@ -86,12 +91,18 @@ struct stmt_t {
 	YYLTYPE location;
 	instr_t *instr;
 	unsigned inum;
-	dep_t mem_dep;
+	struct list_head mem_dep_list;
 	struct list_head rev_dep_list; /* rev_dep_t */
 
 	unsigned cum_latency;
 
 };
+
+static inline void dep_init(dep_t *dep)
+{
+	dep->dep = NULL;
+	dep->dep_type = DEP_NONE;
+}
 
 #define MAX_LATENCY UINT_MAX
 
@@ -108,6 +119,7 @@ void arg_list_free(struct list_head *head);
 void stmt_free(stmt_t *e);
 void stmt_list_free(struct list_head *head);
 
+#define mem_dep_list_for_each(pos, head) list_for_each_entry(pos, head, l)
 #define stmt_list_for_each(pos, head) list_for_each_entry(pos, head, l)
 #define arg_list_for_each(pos, head)  list_for_each_entry(pos, head, l)
 
