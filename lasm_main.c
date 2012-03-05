@@ -43,6 +43,24 @@ static inline void reg_init(reg_t *r, char *name)
 	list_init(r->ra_act + 1);
 }
 
+static inline void reg_access_init(reg_access_t *sp, reg_t *r, stmt_t *stmt, arg_t *arg, bool writer)
+{
+	list_init(&sp->all);
+	list_init(&sp->act);
+	sp->writer     = writer;
+	sp->stmt       = stmt;
+	sp->arg        = arg;
+
+	struct list_head *po = &r->ra_act[!writer];
+	if (list_has_entry(po)) {
+		DEBUG_PR("po->prev = %p", po->prev);
+		sp->prev_other = list_entry(po->prev, reg_access_t, act);
+		DEBUG_PR("prev_other <= %p", sp->prev_other);
+	} else {
+		sp->prev_other = NULL;
+	}
+}
+
 static inline void reg_set_init(reg_set_t *rs)
 {
 	rs->root = NULL;
@@ -56,26 +74,17 @@ int reg_cmpar_by_name(reg_t *to_insert, reg_t *exsisting)
 
 reg_access_t *reg_add_access(reg_t *r, stmt_t *stmt, arg_t *arg, bool writer)
 {
-	struct reg_access_t *sp = malloc(sizeof(*sp));
+	reg_access_t *sp = malloc(sizeof(*sp));
 	if (!sp)
 		return NULL;
 
-	list_init(&sp->all);
-	list_init(&sp->act);
-	sp->writer     = writer;
-	sp->stmt       = stmt;
-	sp->arg        = arg;
+	reg_access_init(sp, r, stmt, arg, writer);
 
-	struct list_head *po = &r->ra_act[!writer];
-	if (list_has_entry(po)) {
-		sp->prev_other = list_entry(po->prev, reg_access_t, act);
-		DEBUG_PR("prev_other <= %p", sp->prev_other);
-	} else {
-		sp->prev_other = NULL;
-	}
+	list_add_prev(&r->ra_all, &sp->all);
+	list_add_prev(&r->ra_act[writer], &sp->act);
 
-	list_add_prev(&sp->all, &r->ra_all);
-	list_add_prev(&sp->act, &r->ra_act[writer]);
+	struct list_head *l = &r->ra_act[writer];
+	DEBUG_PR("writer: %d, prev: %p, next %p", writer, l->prev, l->next);
 	return sp;
 }
 
@@ -101,7 +110,7 @@ reg_access_t *reg_prev_access_with_type(reg_t *r, reg_access_t *cur, bool writte
 	return cur->prev_other;
 }
 
-int stmt_add_dep(stmt_t *stmt, arg_t *arg, bool written, reg_access_t *curr_ra, reg_t *reg)
+int stmt_add_dep(stmt_t *stmt, dep_t *dep, bool written, reg_access_t *curr_ra, reg_t *reg)
 {
 	/* the last access of the type we are not */
 	reg_access_t *prev_ra = reg_prev_access_with_type(reg, curr_ra, !written);
@@ -112,16 +121,15 @@ int stmt_add_dep(stmt_t *stmt, arg_t *arg, bool written, reg_access_t *curr_ra, 
 
 	DEBUG_PR("op: %s", stmt->opcode);
 	DEBUG_PR("prev_ra = %p", prev_ra);
-	DEBUG_PR("arg     = %p", arg);
 
 	if (!written && prev_ra->writer) {
 		/* RAW */
-		arg->dep = prev_ra->stmt;
-		arg->dep_type = DEP_RAW;
+		dep->dep = prev_ra->stmt;
+		dep->dep_type = DEP_RAW;
 	} else if (written && !prev_ra->writer) {
 		/* WAR */
-		arg->dep = prev_ra->stmt;
-		arg->dep_type = DEP_WAR;
+		dep->dep = prev_ra->stmt;
+		dep->dep_type = DEP_WAR;
 	} else {
 		/* some dep I don't care about */
 	}
@@ -129,13 +137,13 @@ int stmt_add_dep(stmt_t *stmt, arg_t *arg, bool written, reg_access_t *curr_ra, 
 	return 0;
 }
 
-int _reg_accessed(struct reg_set *t, stmt_t *stmt, arg_t *arg, bool written, reg_t *found_reg)
+int _reg_accessed(struct reg_set *t, stmt_t *stmt, dep_t *dep, arg_t *arg, bool written, reg_t *found_reg)
 {
 	reg_access_t *ra = reg_add_access(found_reg, stmt, arg, written);
 	if (!ra)
 		return -1;
 
-	return stmt_add_dep(stmt, arg, written, ra, found_reg);
+	return stmt_add_dep(stmt, dep, written, ra, found_reg);
 }
 
 int reg_accessed(struct reg_set *t, stmt_t *stmt, arg_t *arg, bool written)
@@ -146,13 +154,13 @@ int reg_accessed(struct reg_set *t, stmt_t *stmt, arg_t *arg, bool written)
 
 	DEBUG_PR("found reg = %p", found_reg);
 
-	return _reg_accessed(t, stmt, arg, written, found_reg);
+	return _reg_accessed(t, stmt, &arg->dep, arg, written, found_reg);
 }
 
-int mem_accessed(reg_set_t *rs, stmt_t *e, arg_t *a, bool written)
+int mem_accessed(reg_set_t *rs, stmt_t *e, bool written)
 {
 	reg_t *r = &rs->mem;
-	return _reg_accessed(rs, e, a, written, r);
+	return _reg_accessed(rs, e, &e->mem_dep, NULL, written, r);
 }
 
 int stmt_populate_deps(stmt_t *e, struct reg_set *rs)
@@ -166,8 +174,7 @@ int stmt_populate_deps(stmt_t *e, struct reg_set *rs)
 
 	if (e->instr->mem_access == MEM_IN_RD) {
 		/* XXX: add memory read */
-		mem_accessed(rs, e, a, REG_READ);
-
+		mem_accessed(rs, e, REG_READ);
 	}
 
 	bool written = e->instr->mem_access != MEM_OUT_WR;
@@ -178,7 +185,7 @@ int stmt_populate_deps(stmt_t *e, struct reg_set *rs)
 
 	if (e->instr->mem_access == MEM_OUT_WR) {
 		/* XXX: add memory write */
-		mem_accessed(rs, e, a, REG_WRITE);
+		mem_accessed(rs, e, REG_WRITE);
 	}
 
 	return 0;
@@ -220,6 +227,19 @@ void stmt_emit_iloc(stmt_t *e, FILE *o)
 	arg_list_emit(&e->arg_out_list, o);
 }
 
+void dep_print(dep_t *dep, int stmt_parent, FILE *o)
+{
+	if (dep->dep) {
+		char *shape;
+		if (dep->dep_type == DEP_WAR) {
+			shape = "dot";
+		} else {
+			shape = "normal";
+		}
+		fprintf(o, "stmt_%d -> stmt_%d [shape=\"%s\"]\n", stmt_parent, dep->dep->inum, shape);
+	}
+}
+
 void arg_list_deps_print(struct list_head *arg_list, int stmt_parent, FILE *o)
 {
 	arg_t *a;
@@ -227,15 +247,7 @@ void arg_list_deps_print(struct list_head *arg_list, int stmt_parent, FILE *o)
 	arg_list_for_each(a, arg_list) {
 		//fprintf(o, "arg_%d_%d [label=\"%s\"]\n", stmt_parent, i, a->arg);
 		//fprintf(o, "arg_%d_%d -> stmt_%d [dir=\"none\"]\n", stmt_parent, i, stmt_parent);
-		if (a->dep) {
-			char *shape;
-			if (a->dep_type == DEP_WAR) {
-				shape = "dot";
-			} else {
-				shape = "normal";
-			}
-			fprintf(o, "stmt_%d -> stmt_%d\n [shape=\"%s\"]\n", stmt_parent, a->dep->inum, shape);
-		}
+		dep_print(&a->dep, stmt_parent, o);
 		i++;
 	}
 }
@@ -248,6 +260,8 @@ void stmt_deps_print(stmt_t *e, FILE *o)
 
 	arg_list_deps_print(&e->arg_in_list,  e->inum, o);
 	arg_list_deps_print(&e->arg_out_list, e->inum, o);
+
+	dep_print(&e->mem_dep, e->inum, o);
 }
 
 void stmt_list_deps_print(struct list_head *stmt_list, FILE *o)

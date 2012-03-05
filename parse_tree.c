@@ -24,6 +24,12 @@ static const instr_t ops [] = {
 
 #define OPS_CT ARRAY_SIZE(ops)
 
+static inline void dep_init(dep_t *dep)
+{
+	dep->dep = NULL;
+	dep->dep_type = DEP_NONE;
+}
+
 arg_t  *arg_mk(char *arg)
 {
 	arg_t *x = malloc(sizeof(*x));
@@ -42,7 +48,7 @@ arg_t  *arg_mk(char *arg)
 			x->ival = v;
 		}
 		errno = 0;
-		x->dep  = NULL;
+		dep_init(&x->dep);
 	}
 	return x;
 }
@@ -67,6 +73,7 @@ stmt_t *stmt_mk(char *opcode, arg_t *args_in, arg_t *args_out, attr_t *attrs, YY
 
 		x->instr = 0;
 		x->location = location;
+		dep_init(&x->mem_dep);
 	}
 	return x;
 }

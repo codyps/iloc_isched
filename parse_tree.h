@@ -33,6 +33,7 @@ enum arg_type {
 };
 
 enum dep_type {
+	DEP_NONE,
 	DEP_RAW,
 	DEP_WAR
 };
@@ -54,13 +55,17 @@ struct attr_t {
 	char *lbl;
 };
 
+typedef struct dep_t {
+	stmt_t *dep;
+	enum dep_type dep_type;
+} dep_t;
+
 struct arg_t {
 	struct list_head l; /* elem in a list of args in a stmt */
 	char *arg;
 	enum arg_type type;
 	int  ival;
-	stmt_t *dep;
-	enum dep_type dep_type;
+	dep_t dep;
 };
 
 struct stmt_t {
@@ -73,6 +78,7 @@ struct stmt_t {
 	YYLTYPE location;
 	instr_t *instr;
 	int inum;
+	dep_t mem_dep;
 };
 
 arg_t  *arg_mk(char *arg);
