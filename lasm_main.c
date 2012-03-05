@@ -190,7 +190,9 @@ void arg_list_deps_print(struct list_head *arg_list, int stmt_parent, FILE *o)
 	int i = 0;
 	arg_list_for_each(a, arg_list) {
 		fprintf(o, "arg_%d_%d [label=\"%s\"]\n", stmt_parent, i, a->arg);
-		fprintf(o, "arg_%d_%d -> stmt_%d\n",     stmt_parent, i, stmt_parent);
+		fprintf(o, "arg_%d_%d - stmt_%d\n",     stmt_parent, i, stmt_parent);
+		if (a->dep)
+			fprintf(o, "arg_%d_%d -> stmt_%d\n",    stmt_parent, i, a->dep->inum);
 		i++;
 	}
 }
