@@ -5,6 +5,7 @@
 #include "list.h"
 #include "warn.h"
 #include <stdio.h>
+#include <limits.h>
 
 typedef struct attr_t attr_t;
 typedef struct arg_t arg_t;
@@ -68,6 +69,11 @@ struct arg_t {
 	dep_t dep;
 };
 
+typedef struct rev_dep_t {
+	struct list_head l;
+	stmt_t *stmt;
+} rev_dep_t;
+
 struct stmt_t {
 	struct list_head l;
 	char   *opcode;
@@ -79,9 +85,13 @@ struct stmt_t {
 	instr_t *instr;
 	int inum;
 	dep_t mem_dep;
+	bool has_dep; /* someone depends on this */
+	struct list_head rev_dep_list; /* rev_dep_t */
 
 	unsigned cum_latency;
 };
+
+#define MAX_LATENCY UINT_MAX
 
 arg_t  *arg_mk(char *arg);
 stmt_t *stmt_mk(char *opcode, arg_t *args_in, arg_t *args_out, attr_t *attrs, YYLTYPE location);

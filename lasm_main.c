@@ -52,15 +52,10 @@ static inline void reg_access_init(reg_access_t *sp, reg_t *r, stmt_t *stmt, arg
 	sp->arg        = arg;
 
 	struct list_head *po = &r->ra_act[!writer];
-	DEBUG_PR("reg: %s", r->regname);
 	if (list_has_entry(po)) {
-		DEBUG_PR(" po->prev = %p", po->prev);
 		sp->prev_other = list_entry(po->prev, reg_access_t, act);
-		DEBUG_PR(" prev_other <= %p", sp->prev_other);
 	} else {
-		DEBUG_PR(" no assign");
 		sp->prev_other = NULL;
-		DEBUG_PR(" prev_other <= %p", sp->prev_other);
 	}
 }
 
@@ -83,13 +78,9 @@ reg_access_t *reg_add_access(reg_t *r, stmt_t *stmt, arg_t *arg, bool writer)
 
 	reg_access_init(sp, r, stmt, arg, writer);
 
-	DEBUG_PR("thing: &s->all: %p &sp->act %p", &sp->all, &sp->act);
-
 	list_add_prev(&r->ra_all, &sp->all);
 	list_add_prev(&r->ra_act[writer], &sp->act);
 
-	struct list_head *l = &r->ra_all;
-	DEBUG_PR("writer: %d, prev: %p, next %p", writer, l->prev, l->next);
 	return sp;
 }
 
@@ -103,8 +94,6 @@ reg_t *reg_find(struct reg_set *rs, char *regname)
 
 	reg_t **found_reg = tsearch(r, &rs->root, (__compar_fn_t)reg_cmpar_by_name);
 
-	DEBUG_PR("found reg");
-
 	if (*found_reg != r)
 		free(r);
 	return *found_reg;
@@ -113,6 +102,19 @@ reg_t *reg_find(struct reg_set *rs, char *regname)
 reg_access_t *reg_prev_access_with_type(reg_t *r, reg_access_t *cur, bool written)
 {
 	return cur->prev_other;
+}
+
+int stmt_add_rev_dep(stmt_t *dep_on, stmt_t *rev)
+{
+	rev_dep_t *rd = malloc(sizeof(*rd));
+	if (!rd)
+		return -1;
+
+	rd->stmt = rev;
+
+	list_add_prev(&dep_on->rev_dep_list, &rd->l);
+
+	return 0;
 }
 
 int stmt_add_dep(stmt_t *stmt, dep_t *dep, bool written, reg_access_t *curr_ra, reg_t *reg)
@@ -124,19 +126,21 @@ int stmt_add_dep(stmt_t *stmt, dep_t *dep, bool written, reg_access_t *curr_ra, 
 		return 0;
 	}
 
-	DEBUG_PR("op: %s", stmt->opcode);
-	DEBUG_PR("prev_ra = %p", prev_ra);
-
 	if (!written && prev_ra->writer) {
 		/* RAW */
-		dep->dep = prev_ra->stmt;
+		prev_ra->stmt->has_dep = true;
+		stmt_add_rev_dep(prev_ra->stmt, stmt);
+		dep->dep      = prev_ra->stmt;
 		dep->dep_type = DEP_RAW;
 	} else if (written && !prev_ra->writer) {
 		/* WAR */
-		dep->dep = prev_ra->stmt;
+		prev_ra->stmt->has_dep = true;
+		stmt_add_rev_dep(prev_ra->stmt, stmt);
+		dep->dep      = prev_ra->stmt;
 		dep->dep_type = DEP_WAR;
 	} else {
 		/* some dep I don't care about */
+		DEBUG_PR("go a unhandled dep type: written: %d ; prev written: %d", written, prev_ra->writer);
 	}
 
 	return 0;
@@ -274,6 +278,40 @@ void stmt_list_deps_print(struct list_head *stmt_list, FILE *o)
 	fprintf(o, "}\n");
 }
 
+void stmt_calc_cum_latency(stmt_t *e, unsigned prev_latency)
+{
+	if (!e)
+		return;
+
+	unsigned ilate = e->instr->latency;
+	unsigned curlate = ilate + prev_latency;
+	if (e->cum_latency > curlate) {
+		e->cum_latency = curlate;
+
+		arg_t *a;
+		arg_list_for_each(a, &e->arg_in_list) {
+			stmt_calc_cum_latency(a->dep.dep, curlate);
+		}
+
+		arg_list_for_each(a, &e->arg_out_list) {
+			stmt_calc_cum_latency(a->dep.dep, curlate);
+		}
+
+		stmt_calc_cum_latency(e->mem_dep.dep, curlate);
+	}
+}
+
+void stmt_list_calc_cum_latency(struct list_head *stmt_list)
+{
+	stmt_t *e;
+	stmt_list_for_each(e, stmt_list) {
+		if (e->has_dep)
+			continue;
+
+		stmt_calc_cum_latency(e, 0);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	LIST_HEAD(lh);
@@ -300,7 +338,6 @@ int main(int argc, char *argv[])
 
 	stmt_list_deps_print(&lh, stdout);
 
-	stmt_list_print(&lh, stderr);
 	stmt_list_free(&lh);
 
 	return 0;
