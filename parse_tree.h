@@ -81,7 +81,6 @@ typedef struct rev_dep_t {
 
 struct stmt_t {
 	struct list_head l;          /* for our list of stmts in a block */
-	struct list_head ready_list; /* for placing this statement in the ready list */
 
 	char   *opcode;
 	struct list_head arg_in_list;
@@ -94,8 +93,14 @@ struct stmt_t {
 	struct list_head mem_dep_list;
 	struct list_head rev_dep_list; /* rev_dep_t */
 
+	/* for scheduling */
+	struct list_head ready_list; /* for placing this statement in the ready list */
+	struct list_head active_set; /* for placing this statement in the active set */
+
 	unsigned cum_latency;
 
+	unsigned start_cycle;
+	bool     completed;
 };
 
 static inline void dep_init(dep_t *dep)
@@ -112,6 +117,7 @@ attr_t *attr_label_mk(char *label);
 
 int  stmt_list_match_instrs(const struct list_head *head);
 
+void stmt_print(const stmt_t *e, FILE *o);
 void stmt_list_print(const struct list_head *head, FILE *o);
 
 void attr_list_free(struct list_head *head);
@@ -119,8 +125,11 @@ void arg_list_free(struct list_head *head);
 void stmt_free(stmt_t *e);
 void stmt_list_free(struct list_head *head);
 
+#define rev_dep_list_for_each(pos, head) list_for_each_entry(pos, head, l)
 #define mem_dep_list_for_each(pos, head) list_for_each_entry(pos, head, l)
 #define stmt_list_for_each(pos, head) list_for_each_entry(pos, head, l)
+#define stmt_active_list_for_each(pos, head) list_for_each_entry(pos, head, active_set)
+#define stmt_rdy_list_for_each(pos, head) list_for_each_entry(pos, head, ready_list)
 #define arg_list_for_each(pos, head)  list_for_each_entry(pos, head, l)
 
 

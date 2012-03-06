@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <search.h>
+#include <unistd.h>
 
 #define REG_READ  false
 #define REG_WRITE true
@@ -377,22 +378,141 @@ void stmt_list_calc_cum_latency(struct list_head *stmt_list)
 	}
 }
 
-void stmt_list_schedule(struct list_head *stmt_list)
+stmt_t *choose_next_stmt(struct list_head *ready_list)
+{
+	return list_entry(ready_list->next, stmt_t, ready_list);
+}
+
+void populate_leaves(struct list_head *ready, struct list_head *stmts)
 {
 	stmt_t *e;
-	LIST_HEAD(ready);
-	stmt_list_for_each(e, stmt_list) {
+	stmt_list_for_each(e, stmts) {
 		if (stmt_has_fwd_dep(e))
 			continue;
-
 		/* operate only on the leaves */
-		list_add_prev(&ready, &e->ready_list);
+		list_add_prev(ready, &e->ready_list);
 	}
 }
 
+bool stmt_ready(stmt_t *e)
+{
+	arg_t *a;
+	arg_list_for_each(a, &e->arg_in_list) {
+		if (!a->dep.dep->completed)
+			return false;
+	}
+
+	arg_list_for_each(a, &e->arg_out_list) {
+		if (!a->dep.dep->completed)
+			return false;
+	}
+
+	mem_dep_t *md;
+	mem_dep_list_for_each(md, &e->mem_dep_list) {
+		if (!md->dep.dep->completed)
+			return false;
+	}
+
+	return true;
+}
+
+void emit_nop(FILE *o)
+{
+	fprintf(o, "nop\n");
+}
+
+void stmt_list_schedule(struct list_head *stmt_list, bool emit_nops, FILE *o)
+{
+	unsigned cycle = 1;
+	LIST_HEAD(ready);
+	LIST_HEAD(active);
+	populate_leaves(&ready, stmt_list);
+
+	while(!list_is_empty(&ready) || !list_is_empty(&active)) {
+		if (!list_is_empty(&ready)) {
+			stmt_t *e = choose_next_stmt(&ready);
+			list_del(&e->ready_list);
+			e->start_cycle = cycle;
+			list_add_prev(&active, &e->active_set);
+			stmt_emit_iloc(e, o);
+		} else if (emit_nops) {
+			emit_nop(o);
+		}
+
+		cycle += 1;
+
+		stmt_t *e;
+		stmt_active_list_for_each(e, &active) {
+			if ((e->start_cycle  + e->instr->latency) <= cycle) {
+				list_del(&e->active_set);
+				e->completed = true;
+
+				/* for each successor s of op in P */
+				rev_dep_t *rd;
+				rev_dep_list_for_each(rd, &e->rev_dep_list) {
+					/* if s is ready */
+					if (stmt_ready(rd->stmt)) {
+						/* ready <- ready U s */
+						list_add_prev(&ready, &rd->stmt->ready_list);
+					}
+				}
+			}
+		}
+	}
+}
+
+void help(int argc, char *argv[])
+{
+	WARN("usage: %s [options]", argc?argv[0]:"scheduler");
+	WARN("	accepts iloc input on STDIN");
+	WARN("	prints output (iloc or dot) on STDOUT");
+	WARN("options:");
+	WARN("	-a,-b,-c	use one of the schedulers");
+	WARN("	-D		emit dot instead of iloc");
+	WARN("	-N		emit nops in the iloc code");
+	WARN("	-h		show this help");
+	exit(EXIT_FAILURE);
+}
 
 int main(int argc, char *argv[])
 {
+
+	int sched_type = 'z';
+	bool emit_dot  = false;
+	bool emit_nops = false;
+	int opt;
+
+	while ((opt = getopt(argc, argv, "abcDNh")) != EOF) {
+		switch(opt) {
+		case 'a':
+		case 'b':
+		case 'c':
+			sched_type = opt;
+			break;
+
+		case 'D':
+			emit_dot = true;
+			break;
+
+		case 'N':
+			emit_nops = true;
+			break;
+		default:
+			WARN("unknown option '%c'", opt);
+		case 'h':
+			help(argc, argv);
+		}
+	}
+
+	if (emit_dot && emit_nops) {
+		WARN("cannot emit nops in dot code");
+	}
+
+	if (sched_type == 'z') {
+		WARN("the null scheduler is selected, not scheduling instructions");
+	}
+
+
 	LIST_HEAD(lh);
 	yyscan_t s = NULL;
 	int r = lasm_lex_init(&s);
@@ -417,7 +537,13 @@ int main(int argc, char *argv[])
 
 	stmt_list_calc_cum_latency(&lh);
 
-	stmt_list_deps_print(&lh, stdout);
+	if (sched_type != 'z' && !emit_dot) {
+		stmt_list_schedule(&lh, emit_nops, stdout);
+	}
+
+	if (emit_dot) {
+		stmt_list_deps_print(&lh, stdout);
+	}
 
 	stmt_list_free(&lh);
 

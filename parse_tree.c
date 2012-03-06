@@ -72,6 +72,9 @@ stmt_t *stmt_mk(char *opcode, arg_t *args_in, arg_t *args_out, attr_t *attrs, YY
 		list_init(&x->mem_dep_list);
 		x->cum_latency = 0;
 
+		x->start_cycle = 0;
+		x->completed = false;
+
 	}
 	return x;
 }
@@ -134,13 +137,18 @@ static void stmt_mem_print(const stmt_t *s, FILE *o)
 	}
 }
 
+void stmt_print(const stmt_t *e, FILE *o)
+{
+	fprintf(o, "op: %s,\t", e->instr->name);
+	stmt_mem_print(e, o);
+	fprintf(o, "\n");
+}
+
 void stmt_list_print(const struct list_head *head, FILE *o)
 {
 	stmt_t *e;
 	stmt_list_for_each(e, head) {
-		fprintf(o, "op: %s,\t", e->instr->name);
-		stmt_mem_print(e, o);
-		fprintf(o, "\n");
+		stmt_print(e, o);
 	}
 }
 

@@ -44,13 +44,15 @@ TRACK-LDFLAGS: FORCE
             fi
 .SECONDARY:
 
-all:: lasm
+TARGET = scheduler
+
+all:: $(TARGET)
 
 OBJ = lasm.yy.o lasm.tab.o lasm_main.o parse_tree.o
 lasm.yy.o: lasm.tab.h
 lasm.tab.o lasm.yy.o: ALL_CFLAGS:=$(filter-out -Wextra,$(ALL_CFLAGS))
 
-lasm : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
+$(TARGET) : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
 	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o $@ $(OBJ)
 
 %.o : %.c TRACK-CFLAGS
@@ -72,7 +74,7 @@ clean :
 %.dot.png : %.dot
 	dot -Tpng -Grankdir=BT -O $<
 
-%.dot : %.iloc lasm
-	./lasm < $< > $@
+%.dot : %.iloc $(TARGET)
+	./$(TARGET) < $< > $@
 
 -include $(wildcard *.d)
