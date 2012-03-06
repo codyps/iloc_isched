@@ -1,0 +1,12 @@
+Build with 'make'
+
+Usage is as follows (also outputed with -h)
+
+usage: ./scheduler [options]
+	accepts iloc input on STDIN
+	prints output (iloc or dot) on STDOUT
+options:
+	-a,-b,-c	use one of the schedulers
+	-D		emit dot instead of iloc
+	-N		emit nops in the iloc code
+	-h		show this help
