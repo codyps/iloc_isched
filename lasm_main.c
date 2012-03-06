@@ -133,6 +133,9 @@ bool stmt_has_rev_dep(stmt_t *e)
 
 int stmt_add_rev_dep(stmt_t *dep_on, stmt_t *rev)
 {
+	if (dep_on == rev)
+		return 0;
+
 	rev_dep_t *rd = malloc(sizeof(*rd));
 	if (!rd)
 		return -1;
@@ -429,7 +432,6 @@ void stmt_list_calc_cum_latency(struct list_head *stmt_list)
 	}
 }
 
-
 void populate_ready(struct list_head *ready, struct list_head *stmts)
 {
 	stmt_t *e;
@@ -490,6 +492,32 @@ void print_active_list(struct list_head *act, FILE *o)
 
 typedef stmt_t *(*heur_fn_t)(struct list_head *ready_list);
 
+
+unsigned stmt_calc_num_pred(stmt_t *e)
+{
+	unsigned i = 0;
+	arg_t *a;
+	arg_list_for_each(a, &e->arg_in_list) {
+		if (a->dep.dep)
+			i++;
+	}
+
+	arg_list_for_each(a, &e->arg_out_list) {
+		if (a->dep.dep)
+			i++;
+	}
+
+	return i + list_length(&e->mem_dep_list);
+}
+
+void stmt_list_calc_num_pred(struct list_head *stmt_list)
+{
+	stmt_t *e;
+	stmt_list_for_each(e, stmt_list) {
+		e->num_pred = stmt_calc_num_pred(e);
+	}
+}
+
 stmt_t *heur_first(struct list_head *ready_list)
 {
 	return list_entry(ready_list->next, stmt_t, ready_list);
@@ -501,6 +529,18 @@ stmt_t *heur_longest_path(struct list_head *ready_list)
 	stmt_t *e;
 	stmt_rdy_list_for_each(e, ready_list) {
 		if (e->cum_latency > m->cum_latency)
+			m = e;
+	}
+
+	return m;
+}
+
+stmt_t *heur_highest_num_pred(struct list_head *ready_list)
+{
+	stmt_t *m = heur_first(ready_list);
+	stmt_t *e;
+	stmt_rdy_list_for_each(e, ready_list) {
+		if (e->num_pred > m->num_pred)
 			m = e;
 	}
 
@@ -663,8 +703,8 @@ int main(int argc, char *argv[])
 			stmt_list_calc_cum_latency(&lh);
 			break;
 		case 'c':
-			heur = heur_highest_num_decend;
-			stmt_list_calc_num_decend(&lh);
+			heur = heur_highest_num_pred;
+			stmt_list_calc_num_pred(&lh);
 			break;
 		default:
 			WARN("unknown heuristic '%c'", sched_type);

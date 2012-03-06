@@ -101,6 +101,7 @@ struct stmt_t {
 
 	unsigned cum_latency;
 	unsigned num_decend;
+	unsigned num_pred;
 
 	unsigned start_cycle;
 	bool     completed;

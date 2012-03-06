@@ -44,6 +44,17 @@ static inline void list_init(struct list_head *head)
 	     &pos->member != (head);								\
 	     pos = tmp,	tmp = list_entry(pos->member.next, typeof(*pos), member))
 
+static inline unsigned list_length(struct list_head *head)
+{
+	struct list_head *pos;
+	unsigned i = 0;
+	list_for_each(pos, head) {
+		i++;
+	}
+
+	return i;
+}
+
 static inline bool list_is_empty(struct list_head *head)
 {
 	return head == head->next;
