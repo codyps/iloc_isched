@@ -7,5 +7,6 @@
 /* should be lasm_parse_t */
 
 int lasm_parse(struct list_head *stmt_list);
+int lasm_lex();
 
 #endif
