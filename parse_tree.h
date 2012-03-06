@@ -100,6 +100,7 @@ struct stmt_t {
 	struct list_head active_set; /* for placing this statement in the active set */
 
 	unsigned cum_latency;
+	unsigned num_decend;
 
 	unsigned start_cycle;
 	bool     completed;

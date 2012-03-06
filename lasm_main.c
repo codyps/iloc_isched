@@ -172,7 +172,7 @@ int dep_add(reg_access_t *prev, stmt_t *curr, dep_t *dep, enum dep_type dt)
 	return 0;
 }
 
-int stmt_add_dep(stmt_t *stmt, dep_t *dep, reg_access_t *curr_ra)
+int stmt_add_dep(stmt_t *stmt, dep_t *dep, reg_access_t *curr_ra, reg_t *reg)
 {
 	enum dep_type dt = ra_get_dep_type(curr_ra);
 
@@ -180,6 +180,18 @@ int stmt_add_dep(stmt_t *stmt, dep_t *dep, reg_access_t *curr_ra)
 		return 0;
 
 	reg_access_t *prev_ra = ra_prev_opposite_access(curr_ra);
+
+	while (prev_ra && prev_ra->stmt == stmt) {
+		struct list_head *nl = prev_ra->act.prev;
+		if (nl == &reg->ra_act[!curr_ra->writer]) {
+			/* did not find a stmt that wasn't us befor the end,
+			 * no dep */
+			return 0;
+		}
+
+		prev_ra = list_entry(nl, reg_access_t, act);
+	}
+
 	dep_add(prev_ra, stmt, dep, dt);
 
 	return 0;
@@ -223,9 +235,8 @@ int reg_accessed(struct reg_set *t, stmt_t *stmt, arg_t *arg, bool written)
 	if (!ra)
 		return -1;
 
-	return stmt_add_dep(stmt, &arg->dep, ra);
+	return stmt_add_dep(stmt, &arg->dep, ra, found_reg);
 }
-
 
 int mem_accessed(reg_set_t *rs, stmt_t *e, bool written)
 {
@@ -353,6 +364,33 @@ void stmt_list_deps_print(struct list_head *stmt_list, FILE *o)
 	fprintf(o, "}\n");
 }
 
+unsigned stmt_calc_num_decend(stmt_t *e)
+{
+	if (!e)
+		return 0;
+
+	/* if we've already cached it */
+	if (e->num_decend)
+		return e->num_decend;
+
+	rev_dep_t *rd;
+	unsigned s = 0;
+	rev_dep_list_for_each(rd, &e->rev_dep_list) {
+		s += stmt_calc_num_decend(e);
+	}
+
+	e->num_decend = s;
+	return s;
+}
+
+void stmt_list_calc_num_decend(struct list_head *head)
+{
+	stmt_t *e;
+	stmt_list_for_each(e, head) {
+		stmt_calc_num_decend(e);
+	}
+}
+
 void stmt_calc_cum_latency(stmt_t *e, unsigned prev_latency)
 {
 	if (!e)
@@ -361,7 +399,7 @@ void stmt_calc_cum_latency(stmt_t *e, unsigned prev_latency)
 	unsigned ilate = e->instr->latency;
 	unsigned curlate = ilate + prev_latency;
 	if (e->cum_latency < curlate) {
-		DEBUG_PR("curlate: %u, cum_lat: %u (stmt %d: %s) ", curlate, e->cum_latency, e->inum, e->opcode);
+		//DEBUG_PR("curlate: %u, cum_lat: %u (stmt %d: %s) ", curlate, e->cum_latency, e->inum, e->opcode);
 		e->cum_latency = curlate;
 
 		arg_t *a;
@@ -463,6 +501,18 @@ stmt_t *heur_longest_path(struct list_head *ready_list)
 	stmt_t *e;
 	stmt_rdy_list_for_each(e, ready_list) {
 		if (e->cum_latency > m->cum_latency)
+			m = e;
+	}
+
+	return m;
+}
+
+stmt_t *heur_highest_num_decend(struct list_head *ready_list)
+{
+	stmt_t *m = heur_first(ready_list);
+	stmt_t *e;
+	stmt_rdy_list_for_each(e, ready_list) {
+		if (e->num_decend > m->num_decend)
 			m = e;
 	}
 
@@ -613,7 +663,8 @@ int main(int argc, char *argv[])
 			stmt_list_calc_cum_latency(&lh);
 			break;
 		case 'c':
-			heur = heur_first;
+			heur = heur_highest_num_decend;
+			stmt_list_calc_num_decend(&lh);
 			break;
 		default:
 			WARN("unknown heuristic '%c'", sched_type);

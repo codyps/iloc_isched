@@ -74,7 +74,8 @@ stmt_t *stmt_mk(char *opcode, arg_t *args_in, arg_t *args_out, attr_t *attrs, YY
 		x->cum_latency = 0;
 
 		x->start_cycle = 0;
-		x->completed = false;
+		x->num_decend  = 0;
+		x->completed   = false;
 
 	}
 	return x;

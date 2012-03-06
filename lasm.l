@@ -1,6 +1,6 @@
 
 %{
-
+#include <stdio.h>
 #include "parse_tree.h"
 #include "lasm.tab.h"
 #include "lasm_param.h"

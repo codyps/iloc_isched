@@ -68,7 +68,7 @@ $(TARGET) : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
 
 .PHONY: clean
 clean :
-	$(RM) *.[od] *.tab.[ch] *.yy.[ch] *.output lasm
+	$(RM) *.[od] *.tab.[ch] *.yy.[ch] *.output $(TARGET)
 
 #%.dot.png : %.dot
 #	dot -Tpng -Grankdir=BT -O $<
