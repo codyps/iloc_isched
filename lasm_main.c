@@ -162,6 +162,9 @@ enum dep_type ra_get_dep_type(reg_access_t *curr_ra)
 
 int dep_add(reg_access_t *prev, stmt_t *curr, dep_t *dep, enum dep_type dt)
 {
+	if (prev->stmt == curr)
+		return 0;
+
 	stmt_add_rev_dep(prev->stmt, curr);
 	dep->dep      = prev->stmt;
 	dep->dep_type = dt;

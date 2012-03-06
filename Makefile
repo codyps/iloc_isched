@@ -20,7 +20,7 @@ ifndef V
 	QUIET_YACC = @ echo '    ' YACC $@;
 endif
 
-
+.SECONDARY:
 .PHONY: FORCE
 
 ### Detect prefix changes
@@ -42,7 +42,6 @@ TRACK-LDFLAGS: FORCE
 		echo 1>&2 "    * new link flags"; \
 		echo "$$FLAGS" >TRACK-LDFLAGS; \
             fi
-.SECONDARY:
 
 TARGET = scheduler
 
