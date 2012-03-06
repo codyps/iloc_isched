@@ -61,7 +61,7 @@ $(TARGET) : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
 	tred $< | dot -Tpng -o $@
 
 %.yy.c : %.l
-	$(QUIET_LEX)$(LEX) --yylineno -P "$(<:.l=)_" -o $@ --header-file=$(@:.c=.h) $<
+	$(QUIET_LEX)$(LEX) -P"$(<:.l=)_" -o$@ $<
 
 %.tab.c %.tab.h : %.y
 	$(QUIET_YACC)$(YACC) -d -b $(<:.y=) -p "$(<:.y=)_" $<

@@ -3,9 +3,9 @@
 
 #include "list.h"
 
-#define YYLEX_PARAM   scanner
+//#define YYLEX_PARAM   scanner
 /* should be lasm_parse_t */
 
-int lasm_parse(struct list_head *stmt_list, yyscan_t scanner);
+int lasm_parse(struct list_head *stmt_list);
 
 #endif

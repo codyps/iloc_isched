@@ -1,17 +1,12 @@
 %{
+#include <stdlib.h>
 #include <stdio.h>
 #include <stddef.h>
 #include "parse_tree.h"
-#include "lasm.tab.h"
-#include "lasm.yy.h"
 #include "lasm_param.h"
 %}
 
 %parse-param { struct list_head *stmt_list }
-%parse-param { yyscan_t scanner }
-
-%locations
-%define api.pure
 
 %union {
 	struct list_head head;
@@ -23,8 +18,7 @@
 	int    token;
 }
 %{
-#include "lasm.yy.h"
-void lasm_error(YYLTYPE *loc, struct list_head *data, void *scanner, char *msg)
+void lasm_error(struct list_head *data, char *msg)
 {
 	fprintf(stderr, "parse error: %s", msg);
 	exit(1);

@@ -2,7 +2,6 @@
 #include "list.h"
 #include "parse_tree.h"
 #include "lasm.tab.h"
-#include "lasm.yy.h"
 #include "lasm_param.h"
 #include "warn.h"
 
@@ -12,6 +11,7 @@
 #include <stdio.h>
 #include <search.h>
 #include <unistd.h>
+#include <string.h>
 
 #define REG_READ  false
 #define REG_WRITE true
@@ -670,15 +670,10 @@ int main(int argc, char *argv[])
 
 
 	LIST_HEAD(lh);
-	yyscan_t s = NULL;
-	int r = lasm_lex_init(&s);
-	if (r != 0)
-		fprintf(stderr, "bleh.");
 
-	lasm_parse(&lh, s);
-	lasm_lex_destroy(s);
+	lasm_parse(&lh);
 
-	r = stmt_list_match_instrs(&lh);
+	int r = stmt_list_match_instrs(&lh);
 	if (r < 0)
 		return -1;
 
