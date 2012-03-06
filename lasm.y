@@ -55,7 +55,8 @@ program : statements
 	{
 		struct list_head *h = stmt_list;
 		list_head_init(h);
-		list_attach_head(h, &$1->l);
+		if ($1)
+			list_attach_head(h, &$1->l);
 		$$ = h;
 	}
 

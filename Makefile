@@ -71,31 +71,57 @@ $(TARGET) : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
 clean :
 	$(RM) *.[od] *.tab.[ch] *.yy.[ch] *.output lasm
 
-%.dot.png : %.dot
-	dot -Tpng -Grankdir=BT -O $<
+#%.dot.png : %.dot
+#	dot -Tpng -Grankdir=BT -O $<
 
-%.a.dot : %.iloc $(TARGET)
-	./$(TARGET) -aD < $< > $@
+TF=
 
-%.b.dot : %.iloc $(TARGET)
-	./$(TARGET) -bD < $< > $@
 
-%.c.dot : %.iloc $(TARGET)
-	./$(TARGET) -cD < $< > $@
+ISIM=../iloc_sim/sim
 
-%.z.dot : %.iloc $(TARGET)
-	./$(TARGET) -D < $< > $@
+BENCHES=$(shell echo benchmarks/*.iloc | sed 's/[^.]*\..\..*//g' )
+BENCHES_A=$(BENCHES:.iloc=.a)
+BENCHES_B=$(BENCHES:.iloc=.b)
+BENCHES_C=$(BENCHES:.iloc=.c)
+BENCHES_Z=$(BENCHES:.iloc=.z)
+B_ALL=$(BENCHES_A) $(BENCHES_B) $(BENCHES_C) $(BENCHES_Z)
 
-%.a.iloc : %.iloc $(TARGET)
-	./$(TARGET) -a < $< > $@
+B_DOT=$(B_ALL:=.dot)
+B_ILOC=$(B_ALL:=.iloc)
+B_RES=$(B_ALL:=.res)
 
-%.b.iloc : %.iloc $(TARGET)
-	./$(TARGET) -b < $< > $@
+#test: $(B_DOT) $(B_ILOC) $(B_RES)
+test:
+	@echo $(BENCHES)
 
-%.c.iloc : %.iloc $(TARGET)
-	./$(TARGET) -c < $< > $@
+%.a.dot : %.iloc $(TARGET) FORCE
+	./$(TARGET) $(TF) -aD < $< > $@
 
-%.z.iloc : %.iloc $(TARGET)
-	./$(TARGET) < $< > $@
+%.b.dot : %.iloc $(TARGET) FORCE
+	./$(TARGET) $(TF) -bD < $< > $@
+
+%.c.dot : %.iloc $(TARGET) FORCE
+	./$(TARGET) $(TF) -cD < $< > $@
+
+%.z.dot : %.iloc $(TARGET) FORCE
+	./$(TARGET) $(TF) -D < $< > $@
+
+%.a.iloc : %.iloc $(TARGET) FORCE
+	./$(TARGET) $(TF) -a < $< > $@
+
+%.b.iloc : %.iloc $(TARGET) FORCE
+	./$(TARGET) $(TF) -b < $< > $@
+
+%.c.iloc : %.iloc $(TARGET) FORCE
+	./$(TARGET) $(TF) -c < $< > $@
+
+%.z.iloc : %.iloc $(TARGET) FORCE
+	./$(TARGET) $(TF) < $< > $@
+
+%.res : %.iloc $(TARGET) FORCE
+	$(ISIM) < $< > $@
+
+
+
 
 -include $(wildcard *.d)

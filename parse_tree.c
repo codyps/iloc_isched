@@ -24,8 +24,7 @@ static const instr_t ops [] = {
 
 #define OPS_CT ARRAY_SIZE(ops)
 
-
-arg_t  *arg_mk(char *arg)
+arg_t *arg_mk(char *arg)
 {
 	arg_t *x = malloc(sizeof(*x));
 	if (x) {
@@ -56,15 +55,15 @@ stmt_t *stmt_mk(char *opcode, arg_t *args_in, arg_t *args_out, attr_t *attrs, YY
 		x->opcode = opcode;
 		list_init(&x->arg_in_list);
 		if (args_in)
-			list_add(&args_in->l, &x->arg_in_list);
+			list_attach_head(&x->arg_in_list, &args_in->l);
 
 		list_init(&x->arg_out_list);
 		if (args_out)
-			list_add(&args_out->l, &x->arg_out_list);
+			list_attach_head(&x->arg_out_list, &args_out->l);
 
 		list_init(&x->attr_list);
 		if (attrs)
-			list_add(&attrs->l, &x->attr_list);
+			list_attach_head(&x->attr_list, &attrs->l);
 
 		x->instr = 0;
 		x->location = location;

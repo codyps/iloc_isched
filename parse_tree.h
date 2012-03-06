@@ -24,7 +24,8 @@ typedef struct stmt_t stmt_t;
 #define OP(name_, latency_, mem_) {	\
 	.name = #name_,			\
 	.latency = latency_,		\
-	.mem_access = mem_		\
+	.mem_access = mem_,		\
+	.war_latency = 1		\
 }
 
 enum arg_type {
@@ -49,6 +50,7 @@ typedef struct instr_t {
 	char *name;
 	enum mem_access mem_access;
 	unsigned latency;
+	unsigned war_latency;
 } instr_t;
 
 struct attr_t {
@@ -125,13 +127,13 @@ void arg_list_free(struct list_head *head);
 void stmt_free(stmt_t *e);
 void stmt_list_free(struct list_head *head);
 
-#define rev_dep_list_for_each(pos, head) list_for_each_entry(pos, head, l)
-#define mem_dep_list_for_each(pos, head) list_for_each_entry(pos, head, l)
-#define stmt_list_for_each(pos, head) list_for_each_entry(pos, head, l)
-#define stmt_active_list_for_each(pos, head) list_for_each_entry(pos, head, active_set)
+#define rev_dep_list_for_each(pos, head)               list_for_each_entry(pos, head, l)
+#define mem_dep_list_for_each(pos, head)               list_for_each_entry(pos, head, l)
+#define stmt_list_for_each(pos, head)                  list_for_each_entry(pos, head, l)
+#define stmt_active_list_for_each(pos, head)           list_for_each_entry(pos, head, active_set)
 #define stmt_active_list_for_each_safe(pos, tmp, head) list_for_each_entry_safe(pos, tmp, head, active_set)
-#define stmt_rdy_list_for_each(pos, head) list_for_each_entry(pos, head, ready_list)
-#define arg_list_for_each(pos, head)  list_for_each_entry(pos, head, l)
+#define stmt_rdy_list_for_each(pos, head)              list_for_each_entry(pos, head, ready_list)
+#define arg_list_for_each(pos, head)                   list_for_each_entry(pos, head, l)
 
 
 #define WARN_STMT(stmt, ...) PARSE_ERR(stmt, __VA_ARGS__)
