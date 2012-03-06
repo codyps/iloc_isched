@@ -378,9 +378,35 @@ void stmt_list_calc_cum_latency(struct list_head *stmt_list)
 	}
 }
 
-stmt_t *choose_next_stmt(struct list_head *ready_list)
+typedef stmt_t *(*heur_fn_t)(struct list_head *ready_list);
+
+stmt_t *heur_first(struct list_head *ready_list)
 {
 	return list_entry(ready_list->next, stmt_t, ready_list);
+}
+
+stmt_t *heur_longest_path(struct list_head *ready_list)
+{
+	stmt_t *m = heur_first(ready_list);
+	stmt_t *e;
+	stmt_rdy_list_for_each(e, ready_list) {
+		if (e->cum_latency > m->cum_latency)
+			m = e;
+	}
+
+	return m;
+}
+
+stmt_t *heur_highest_instr_latency(struct list_head *ready_list)
+{
+	stmt_t *m = heur_first(ready_list);
+	stmt_t *e;
+	stmt_rdy_list_for_each(e, ready_list) {
+		if (e->instr->latency > m->instr->latency)
+			m = e;
+	}
+
+	return m;
 }
 
 void populate_leaves(struct list_head *ready, struct list_head *stmts)
@@ -421,7 +447,7 @@ void emit_nop(FILE *o)
 	fprintf(o, "nop\n");
 }
 
-void stmt_list_schedule(struct list_head *stmt_list, bool emit_nops, FILE *o)
+void stmt_list_schedule(struct list_head *stmt_list, heur_fn_t choose_next_stmt, bool emit_nops, FILE *o)
 {
 	unsigned cycle = 1;
 	LIST_HEAD(ready);
@@ -538,7 +564,22 @@ int main(int argc, char *argv[])
 	stmt_list_calc_cum_latency(&lh);
 
 	if (sched_type != 'z' && !emit_dot) {
-		stmt_list_schedule(&lh, emit_nops, stdout);
+		heur_fn_t heur = NULL;
+		switch(sched_type) {
+		case 'a':
+			heur = heur_longest_path;
+			break;
+		case 'b':
+			heur = heur_highest_instr_latency;
+			break;
+		case 'c':
+			heur = heur_first;
+			break;
+		default:
+			WARN("unknown heuristic '%c'", sched_type);
+			return -1;
+		}
+		stmt_list_schedule(&lh, heur, emit_nops, stdout);
 	}
 
 	if (emit_dot) {

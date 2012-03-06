@@ -74,7 +74,28 @@ clean :
 %.dot.png : %.dot
 	dot -Tpng -Grankdir=BT -O $<
 
-%.dot : %.iloc $(TARGET)
+%.a.dot : %.iloc $(TARGET)
+	./$(TARGET) -aD < $< > $@
+
+%.b.dot : %.iloc $(TARGET)
+	./$(TARGET) -bD < $< > $@
+
+%.c.dot : %.iloc $(TARGET)
+	./$(TARGET) -cD < $< > $@
+
+%.z.dot : %.iloc $(TARGET)
+	./$(TARGET) -D < $< > $@
+
+%.a.iloc : %.iloc $(TARGET)
+	./$(TARGET) -a < $< > $@
+
+%.b.iloc : %.iloc $(TARGET)
+	./$(TARGET) -b < $< > $@
+
+%.c.iloc : %.iloc $(TARGET)
+	./$(TARGET) -c < $< > $@
+
+%.z.iloc : %.iloc $(TARGET)
 	./$(TARGET) < $< > $@
 
 -include $(wildcard *.d)
