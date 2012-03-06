@@ -42,8 +42,7 @@ static inline void list_init(struct list_head *head)
 	for (pos = list_entry((head)->next, typeof(*pos), member),				\
 			tmp = list_entry(pos->member.next, typeof(*pos), member);		\
 	     &pos->member != (head);								\
-	     pos = list_entry(tmp, typeof(*pos), member),					\
-			tmp = list_entry(pos->member.next, typeof(*pos), member))
+	     pos = tmp,	tmp = list_entry(pos->member.next, typeof(*pos), member))
 
 static inline bool list_is_empty(struct list_head *head)
 {

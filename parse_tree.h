@@ -129,6 +129,7 @@ void stmt_list_free(struct list_head *head);
 #define mem_dep_list_for_each(pos, head) list_for_each_entry(pos, head, l)
 #define stmt_list_for_each(pos, head) list_for_each_entry(pos, head, l)
 #define stmt_active_list_for_each(pos, head) list_for_each_entry(pos, head, active_set)
+#define stmt_active_list_for_each_safe(pos, tmp, head) list_for_each_entry_safe(pos, tmp, head, active_set)
 #define stmt_rdy_list_for_each(pos, head) list_for_each_entry(pos, head, ready_list)
 #define arg_list_for_each(pos, head)  list_for_each_entry(pos, head, l)
 

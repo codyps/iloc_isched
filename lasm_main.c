@@ -378,6 +378,65 @@ void stmt_list_calc_cum_latency(struct list_head *stmt_list)
 	}
 }
 
+
+void populate_leaves(struct list_head *ready, struct list_head *stmts)
+{
+	stmt_t *e;
+	stmt_list_for_each(e, stmts) {
+		if (stmt_has_fwd_dep(e))
+			continue;
+		/* operate only on the leaves */
+		list_add_prev(ready, &e->ready_list);
+	}
+}
+
+bool stmt_ready(stmt_t *e)
+{
+	arg_t *a;
+	arg_list_for_each(a, &e->arg_in_list) {
+		if (a->dep.dep && !a->dep.dep->completed)
+			return false;
+	}
+
+	arg_list_for_each(a, &e->arg_out_list) {
+		if (a->dep.dep && !a->dep.dep->completed)
+			return false;
+	}
+
+	mem_dep_t *md;
+	mem_dep_list_for_each(md, &e->mem_dep_list) {
+		if (!md->dep.dep->completed)
+			return false;
+	}
+
+	return true;
+}
+
+void emit_nop(FILE *o)
+{
+	fprintf(o, "nop\n");
+}
+
+void print_ready_list(struct list_head *rdy, FILE *o)
+{
+	stmt_t *e;
+	fprintf(o, "[");
+	stmt_rdy_list_for_each(e, rdy) {
+		fprintf(o, "%s, ", e->opcode);
+	}
+	fprintf(o, "]\n");
+}
+
+void print_active_list(struct list_head *act, FILE *o)
+{
+	stmt_t *e;
+	fprintf(o, "[");
+	stmt_active_list_for_each(e, act) {
+		fprintf(o, "%s, ", e->opcode);
+	}
+	fprintf(o, "]\n");
+}
+
 typedef stmt_t *(*heur_fn_t)(struct list_head *ready_list);
 
 stmt_t *heur_first(struct list_head *ready_list)
@@ -409,44 +468,6 @@ stmt_t *heur_highest_instr_latency(struct list_head *ready_list)
 	return m;
 }
 
-void populate_leaves(struct list_head *ready, struct list_head *stmts)
-{
-	stmt_t *e;
-	stmt_list_for_each(e, stmts) {
-		if (stmt_has_fwd_dep(e))
-			continue;
-		/* operate only on the leaves */
-		list_add_prev(ready, &e->ready_list);
-	}
-}
-
-bool stmt_ready(stmt_t *e)
-{
-	arg_t *a;
-	arg_list_for_each(a, &e->arg_in_list) {
-		if (!a->dep.dep->completed)
-			return false;
-	}
-
-	arg_list_for_each(a, &e->arg_out_list) {
-		if (!a->dep.dep->completed)
-			return false;
-	}
-
-	mem_dep_t *md;
-	mem_dep_list_for_each(md, &e->mem_dep_list) {
-		if (!md->dep.dep->completed)
-			return false;
-	}
-
-	return true;
-}
-
-void emit_nop(FILE *o)
-{
-	fprintf(o, "nop\n");
-}
-
 void stmt_list_schedule(struct list_head *stmt_list, heur_fn_t choose_next_stmt, bool emit_nops, FILE *o)
 {
 	unsigned cycle = 1;
@@ -467,8 +488,8 @@ void stmt_list_schedule(struct list_head *stmt_list, heur_fn_t choose_next_stmt,
 
 		cycle += 1;
 
-		stmt_t *e;
-		stmt_active_list_for_each(e, &active) {
+		stmt_t *e = NULL, *tmp = NULL;
+		stmt_active_list_for_each_safe(e, tmp, &active) {
 			if ((e->start_cycle  + e->instr->latency) <= cycle) {
 				list_del(&e->active_set);
 				e->completed = true;
@@ -479,6 +500,7 @@ void stmt_list_schedule(struct list_head *stmt_list, heur_fn_t choose_next_stmt,
 					/* if s is ready */
 					if (stmt_ready(rd->stmt)) {
 						/* ready <- ready U s */
+						list_del(&rd->stmt->ready_list);
 						list_add_prev(&ready, &rd->stmt->ready_list);
 					}
 				}

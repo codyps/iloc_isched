@@ -59,7 +59,7 @@ $(TARGET) : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
 	$(QUIET_CC)$(CC) $(ALL_CFLAGS) -c -o $@ $<
 
 %.dot.png: %.dot
-	dot -Tpng $< -o $@
+	tred $< | dot -Tpng -o $@
 
 %.yy.c : %.l
 	$(QUIET_LEX)$(LEX) --yylineno -P "$(<:.l=)_" -o $@ --header-file=$(@:.c=.h) $<

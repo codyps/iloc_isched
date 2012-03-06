@@ -70,6 +70,8 @@ stmt_t *stmt_mk(char *opcode, arg_t *args_in, arg_t *args_out, attr_t *attrs, YY
 		x->location = location;
 		list_init(&x->rev_dep_list);
 		list_init(&x->mem_dep_list);
+		list_init(&x->ready_list);
+		list_init(&x->active_set);
 		x->cum_latency = 0;
 
 		x->start_cycle = 0;
