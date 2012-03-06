@@ -1,0 +1,110 @@
+\documentclass{article}
+%\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{frame}
+\usepackage{float}
+\usepackage{verbatim}
+\usepackage{cmap}
+\usepackage{hyperref}
+%\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{mathtools} %amsmath minus some quirks
+
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+
+\newcommand{\scfunc}[2]{\textsc{#1}(#2)}
+\newcommand{\fs}[1]{\scfunc{First}{#1}}
+\newcommand{\fol}[1]{\scfunc{Follow}{#1}}
+\newcommand{\yeilds}[1]{#1}
+\newcommand{\T}[1]{~\textbf{#1}~}
+\newcommand{\NT}[1]{<#1>}
+
+\title{Compilers Project}
+\author{Cody Schafer}
+\date{\today}
+
+\begin{document}
+\maketitle
+\lstset{breaklines=true,
+	title=\lstname,
+	frame=shadowbox,
+	rulesepcolor=\color{gray},
+	tabsize=8,
+	basicstyle=\footnotesize,
+	numbers=left,                   % where to put the line-numbers
+	numberstyle=\tiny\color{gray}}
+
+
+\section{Utilized Schedulers}
+
+All the scheduling algorithms used in this project fall into the same categorey as "forward list schedulers", meaning that each proceeds from the leaves (those items of the graph which have nothing depend on them, ie: they have no predicessors) to to roots (those items which do not depend on any other nodes, ie: they have no successors). As such, each of the algorithms is a simple replacement of a heuristic within the unchanging list scheduling algorithm.
+
+The first scheduler, A (longest latency wieghted path to root), attempts to favor the running of critial paths, those paths which determine the minimal time that the program can execute in when given infinte concurency. This fails to recognize, however, that other paths could be started in parallel with the critical one.
+
+The second scheduler, B (highest latency instructions), ignores the longest wieghted path in favor of how long each instruction would execute. This does spread out the attempted branches of the code, but doesn't look past 1 instruction which means some code sequences will be non-optimally scheduled.
+
+For the third scheduler, C, instructions with larger numbers of immediate successors where prioritized. This encourages pursuing different paths in the execution, hopefully avoiding more conflicts than we would have if working on a few long paths.
+
+\section{Issues with the approach taken}
+
+Given the lack of information on symbolic references into the memory region, a significant number of additional dependencies where generated that may or may not be valid. For example, any memory read was required to depend on all past memory writes. In addition to causing suboptimal scheduling due to invalid dependencies, the larger number of edges causes processing the graph to be much slower.
+
+\section{Table of results}
+
+\begin{center}
+\begin{tabular}{r|llll}
+Benchmark & Original & Scheduler A & Scheduler B & Scheduler C \\ \hline
+01 & 71 & 76 & 73 & 73 \\
+02 & 120 & 120 & 120 & 120 \\
+03 & 7 & 7 & 7 & 7 \\
+04 & 106 & 88 & 82 & 79 \\
+05 & 73 & 76 & 75 & 69 \\
+06 & 237 & 221 & 198 & 198 \\
+07 & 89 & 81 & 70 & 70 \\
+08 & 120 & 104 & 95 & 95 \\
+09 & 165 & 139 & 103 & 103 \\
+10 & 37 & 35 & 27 & 26 \\
+11 & 45 & 43 & 34 & 34 \\
+12 & 55 & 63 & 51 & 51 \\
+13 & 53 & 60 & 51 & 51 \\
+14 & 53 & 60 & 51 & 51 \\
+15 & 73 & 75 & 74 & 69 \\
+16 & 8 & 8 & 8 & 8 \\
+17 & 71 & 74 & 71 & 71 \\
+18 & 45 & 43 & 34 & 34 \\
+19 & 120 & 104 & 95 & 95 \\
+20 & 106 & 88 & 82 & 77 \\
+01 & 71 & 76 & 73 & 73 \\
+02 & 120 & 120 & 120 & 120 \\
+03 & 7 & 7 & 7 & 7 \\
+04 & 106 & 88 & 82 & 79 \\
+05 & 73 & 76 & 75 & 69 \\
+06 & 237 & 221 & 198 & 198 \\
+07 & 89 & 81 & 70 & 70 \\
+08 & 120 & 104 & 95 & 95 \\
+09 & 165 & 139 & 103 & 103 \\
+10 & 37 & 35 & 27 & 26 \\
+11 & 45 & 43 & 34 & 34 \\
+12 & 55 & 63 & 51 & 51 \\
+13 & 53 & 60 & 51 & 51 \\
+14 & 53 & 60 & 51 & 51 \\
+15 & 73 & 75 & 74 & 69 \\
+16 & 8 & 8 & 8 & 8 \\
+17 & 71 & 74 & 71 & 71 \\
+18 & 45 & 43 & 34 & 34 \\
+19 & 120 & 104 & 95 & 95 \\
+20 & 106 & 88 & 82 & 77
+\end{tabular}
+\end{center}
+
+\section{Notable Portions of the results}
+
+Interestingly, Scheduler C (number of local successors) preforms on par with or better than the other 2 heuristics on all benchmarks.
+
+Note that the first benchmark results in slower code following scheduling. As the scheduling is inexact (scheduling it precicelly is a mathematically hard problem) and we don't make incremental improvements on the ordering of the instructions, choosing instead to completely regenerate the ordering of the instructions, it is possible that the results of scheduling will be worse than the input data.
+
+The highest gains are found in larger basic blocks (thus the short 8 or 7 instruction blocks are not improved) due to the possibility for a higher amount concurency.
+
+
+\end{document}
