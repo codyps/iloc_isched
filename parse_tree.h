@@ -10,7 +10,7 @@
 typedef struct attr_t attr_t;
 typedef struct arg_t arg_t;
 typedef struct stmt_t stmt_t;
-#include "lasm.tab.h" /* YYLTYPE */
+#include "iloc.tab.h" /* YYLTYPE */
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
 #define ARR(...) { __VA_ARGS__ }

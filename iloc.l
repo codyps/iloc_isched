@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parse_tree.h"
-#include "lasm.tab.h"
+#include "iloc.tab.h"
 #include "lasm_param.h"
 #define YY_NO_INPUT    /* hides warning about "input defined but not used" */
 
@@ -19,7 +19,7 @@ static inline void *memdup(void *s, size_t l)
 // hides warning about unused yyunput.
 static void yyunput (int c,char *buf_ptr) __attribute__((unused));
 
-#define SAVE_TOKEN do { lasm_lval.str = memdup(yytext, yyleng + 1); } while(0)
+#define SAVE_TOKEN do { iloc_lval.str = memdup(yytext, yyleng + 1); } while(0)
 %}
 
 %option noyywrap never-interactive

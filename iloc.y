@@ -18,7 +18,7 @@
 	int    token;
 }
 %{
-void lasm_error(struct list_head *data, char *msg)
+void iloc_error(struct list_head *data, char *msg)
 {
 	fprintf(stderr, "parse error: %s", msg);
 	exit(1);

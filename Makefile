@@ -3,10 +3,8 @@ all::
 CFLAGS = -ggdb -O0
 LDFLAGS=
 
-
-ALL_CFLAGS = $(CFLAGS) -std=gnu99 -MMD -Wall -Wextra
+ALL_CFLAGS  = $(CFLAGS) -std=gnu99 -MMD -Wall -Wextra
 ALL_LDFLAGS = $(LDFLAGS)
-
 
 CC     = gcc
 LEX    = flex
@@ -47,12 +45,13 @@ TARGET = scheduler
 
 all:: $(TARGET)
 
-OBJ = lasm.yy.o lasm.tab.o lasm_main.o parse_tree.o
-lasm.yy.o: lasm.tab.h
-lasm.tab.o lasm.yy.o: ALL_CFLAGS:=$(filter-out -Wextra,$(ALL_CFLAGS))
+OBJ = iloc.yy.o iloc.tab.o lasm_main.o parse_tree.o
+iloc.yy.o: iloc.tab.h
+iloc.tab.o iloc.yy.o: ALL_CFLAGS:=$(filter-out -Wextra,$(ALL_CFLAGS))
 
 $(TARGET) : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
-	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o $@ $(OBJ)
+	$(QUIET_LINK)$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) -o \
+		$@ $(filter-out TRACK-LDFLAGS,$(filter-out TRACK-CFLAGS,$^))
 
 %.o : %.c TRACK-CFLAGS
 	$(QUIET_CC)$(CC) $(ALL_CFLAGS) -c -o $@ $<
@@ -69,58 +68,6 @@ $(TARGET) : $(OBJ) TRACK-LDFLAGS TRACK-CFLAGS
 .PHONY: clean
 clean :
 	$(RM) *.[od] *.tab.[ch] *.yy.[ch] *.output $(TARGET)
-
-#%.dot.png : %.dot
-#	dot -Tpng -Grankdir=BT -O $<
-
-TF=
-
-
-ISIM=../iloc_sim/sim
-
-BENCHES=$(shell echo benchmarks/*.iloc | sed 's/[^.]*\..\..*//g' )
-BENCHES_A=$(BENCHES:.iloc=.a)
-BENCHES_B=$(BENCHES:.iloc=.b)
-BENCHES_C=$(BENCHES:.iloc=.c)
-BENCHES_Z=$(BENCHES:.iloc=.z)
-B_ALL=$(BENCHES_A) $(BENCHES_B) $(BENCHES_C) $(BENCHES_Z)
-
-B_DOT=$(B_ALL:=.dot)
-B_ILOC=$(B_ALL:=.iloc)
-B_RES=$(B_ALL:=.res)
-
-#test: $(B_DOT) $(B_ILOC) $(B_RES)
-test:
-	@echo $(BENCHES)
-
-%.a.dot : %.iloc $(TARGET) FORCE
-	./$(TARGET) $(TF) -aD < $< > $@
-
-%.b.dot : %.iloc $(TARGET) FORCE
-	./$(TARGET) $(TF) -bD < $< > $@
-
-%.c.dot : %.iloc $(TARGET) FORCE
-	./$(TARGET) $(TF) -cD < $< > $@
-
-%.z.dot : %.iloc $(TARGET) FORCE
-	./$(TARGET) $(TF) -D < $< > $@
-
-%.a.iloc : %.iloc $(TARGET) FORCE
-	./$(TARGET) $(TF) -a < $< > $@
-
-%.b.iloc : %.iloc $(TARGET) FORCE
-	./$(TARGET) $(TF) -b < $< > $@
-
-%.c.iloc : %.iloc $(TARGET) FORCE
-	./$(TARGET) $(TF) -c < $< > $@
-
-%.z.iloc : %.iloc $(TARGET) FORCE
-	./$(TARGET) $(TF) < $< > $@
-
-%.res : %.iloc $(TARGET) FORCE
-	$(ISIM) < $< > $@
-
-
-
+	$(RM) TRACK-CFLAGS TRACK-LDFLAGS
 
 -include $(wildcard *.d)

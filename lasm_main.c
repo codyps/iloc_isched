@@ -1,7 +1,7 @@
 
 #include "list.h"
 #include "parse_tree.h"
-#include "lasm.tab.h"
+#include "iloc.tab.h"
 #include "lasm_param.h"
 #include "warn.h"
 
@@ -671,7 +671,7 @@ int main(int argc, char *argv[])
 
 	LIST_HEAD(lh);
 
-	lasm_parse(&lh);
+	iloc_parse(&lh);
 
 	int r = stmt_list_match_instrs(&lh);
 	if (r < 0)
