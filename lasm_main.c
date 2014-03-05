@@ -379,7 +379,7 @@ unsigned stmt_calc_num_decend(stmt_t *e)
 	rev_dep_t *rd;
 	unsigned s = 0;
 	rev_dep_list_for_each(rd, &e->rev_dep_list) {
-		s += stmt_calc_num_decend(e);
+		s += stmt_calc_num_decend(rd->stmt);
 	}
 
 	e->num_decend = s;
@@ -638,11 +638,14 @@ int main(int argc, char *argv[])
 	bool emit_nops = false;
 	int opt;
 
-	while ((opt = getopt(argc, argv, "abcDNh")) != EOF) {
+	while ((opt = getopt(argc, argv, "abcdezDNh")) != EOF) {
 		switch(opt) {
 		case 'a':
 		case 'b':
 		case 'c':
+		case 'd':
+		case 'e':
+		case 'z':
 			sched_type = opt;
 			break;
 
@@ -692,14 +695,23 @@ int main(int argc, char *argv[])
 		switch(sched_type) {
 		case 'a':
 			heur = heur_longest_path;
+			stmt_list_calc_cum_latency(&lh);
 			break;
 		case 'b':
 			heur = heur_highest_instr_latency;
-			stmt_list_calc_cum_latency(&lh);
 			break;
 		case 'c':
 			heur = heur_highest_num_pred;
 			stmt_list_calc_num_pred(&lh);
+			break;
+		case 'd':
+			/* broken 'a' */
+			heur = heur_longest_path;
+			break;
+		case 'e':
+			/* the unused & broken one */
+			heur = heur_highest_num_decend;
+			stmt_list_calc_num_decend(&lh);
 			break;
 		default:
 			WARN("unknown heuristic '%c'", sched_type);

@@ -1,10 +1,12 @@
 #! /bin/sh
 
-S="z a b c"
+S="z a b c d e"
 D=./benchmarks
 O=./output
 B=./scheduler
 C=../iloc_sim/sim
+
+mkdir -p "$O"
 
 for F in $D/bench??.iloc; do
 	f=$(basename "$F" ".iloc")
