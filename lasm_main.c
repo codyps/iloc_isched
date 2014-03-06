@@ -367,6 +367,19 @@ void stmt_list_deps_print(struct list_head *stmt_list, FILE *o)
 	fprintf(o, "}\n");
 }
 
+#if 0
+void stmt_list_calc_unique_decend(struct list_head *head)
+{
+	unsigned depth = 1;
+	stmt_t *e;
+
+	for (depth = 1; ; depth++) {
+		stmt_list_for_each(e, head) {
+		}
+	}
+}
+#endif
+
 unsigned stmt_calc_num_decend(stmt_t *e)
 {
 	if (!e)
@@ -379,7 +392,10 @@ unsigned stmt_calc_num_decend(stmt_t *e)
 	rev_dep_t *rd;
 	unsigned s = 0;
 	rev_dep_list_for_each(rd, &e->rev_dep_list) {
-		s += stmt_calc_num_decend(rd->stmt);
+		/* N*N */
+		//s += stmt_calc_num_decend(rd->stmt);
+		/* count imediate decendents instead */
+		s++;
 	}
 
 	e->num_decend = s;
